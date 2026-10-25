@@ -1,0 +1,9 @@
+{
+  "made_by": "python tools/backup.py",
+  "sources": [
+    "workspace/",
+    "logs/",
+    "ollama list",
+    "~/.config/opencode"
+  ]
+}

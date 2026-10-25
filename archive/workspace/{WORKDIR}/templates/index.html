@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CleanSignal - Report Pollution</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🌍 CleanSignal</h1>
+            <p>Citizen Pollution Reporting Platform</p>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="navbar">
+            <a href="#home" class="nav-link active">Home</a>
+            <a href="#reports" class="nav-link">Reports</a>
+            <a href="#about" class="nav-link">About</a>
+            <button id="auth-btn" class="btn-primary">Login</button>
+        </nav>
+
+        <!-- Main Content -->
+        <main>
+            <!-- Hero Section -->
+            <section id="home" class="hero">
+                <h2>Report Pollution in Your Community</h2>
+                <p>Help keep our environment clean by reporting pollution incidents.</p>
+                <button class="btn-large" onclick="scrollToReports()">Submit Report</button>
+            </section>
+
+            <!-- Report Form Section -->
+            <section id="reports" class="reports-section">
+                <h2>Submit a New Report</h2>
+                <form id="report-form" class="report-form">
+                    <div class="form-group">
+                        <label for="location">Location *</label>
+                        <input type="text" id="location" name="location" required placeholder="Enter address or landmark">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="description">Description *</label>
+                        <textarea id="description" name="description" rows="4" required placeholder="Describe the pollution incident..."></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="pollutant-type">Pollutant Type</label>
+                            <select id="pollutant-type" name="pollutant_type">
+                                <option value="">Select type...</option>
+                                <option value="smoke">Smoke/Fumes</option>
+                                <option value="water">Water Contamination</option>
+                                <option value="noise">Noise Pollution</option>
+                                <option value="chemical">Chemical Spill</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="severity">Severity (1-5) *</label>
+                            <input type="number" id="severity" name="severity" min="1" max="5" value="3" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="photo">Photo (Optional)</label>
+                        <input type="file" id="photo" name="photo" accept="image/*">
+                    </div>
+
+                    <button type="submit" class="btn-primary">Submit Report</button>
+                </form>
+            </section>
+
+            <!-- Reports List Section -->
+            <section id="reports-list" class="reports-list">
+                <h2>Recent Reports</h2>
+                <div id="reports-container" class="reports-grid"></div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer id="about">
+            <p>&copy; 2024 CleanSignal. Built for environmental awareness.</p>
+            <p>Contact: support@cleansignal.com</p>
+        </footer>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

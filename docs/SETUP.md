@@ -2,6 +2,40 @@
 
 Everything here was set up and tested on 2026-10-25 on Windows 11 with an RTX 4070 SUPER (12 GB), Ollama 0.40.11, Python 3.14, Node.js 24 LTS and OpenCode 1.19.4.
 
+## New PC in 5 steps
+
+If everything is lost, this rebuilds the whole setup from this repo:
+
+1. Install Git, [Python 3.14](https://www.python.org/downloads/) and the [Ollama](https://ollama.com) app. Clone this repo.
+2. In the repo folder, run this. It sets the Ollama settings and the PATH, and copies the OpenCode config:
+   ```bash
+   powershell -ExecutionPolicy Bypass -File setup\windows\restore-settings.ps1
+   ```
+   Then restart Ollama from the tray icon and open a new terminal.
+3. Get the main model and rebuild the two custom variants:
+   ```bash
+   ollama pull qwen3.5:9b
+   ```
+   ```bash
+   ollama create qwen3.5-fix -f setup\ollama\qwen3.5-fix.Modelfile
+   ```
+   ```bash
+   ollama create qwen-plannig -f setup\ollama\qwen-plannig.Modelfile
+   ```
+4. Install the Python requirement and check that everything works:
+   ```bash
+   python -m pip install requests pytest
+   ```
+   ```bash
+   python -m pytest
+   ```
+5. Optional extras:
+   - OpenCode: step 3 below.
+   - The course and rizzo-flow: [EXTERNAL.md](EXTERNAL.md).
+   - The agent's old work and logs are in [archive/](../archive).
+
+**To keep the backup current**, run `python tools/backup.py`, then commit. It copies `workspace/`, `logs/`, your custom Ollama models and the OpenCode config into the repo, with secrets left out and your name masked.
+
 ## 1. Ollama
 
 Install the Ollama app for Windows, then pull the model:

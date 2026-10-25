@@ -1,0 +1,74 @@
+{% extends "layout.html" %}
+{% block title %}New Report - CleanSignal{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">➕ Submit New Pollution Report</h3>
+                </div>
+                <div class="card-body">
+                    <form id="reportForm" action="/api/reports" method="POST">
+                        <div class="mb-3">
+                            <label for="location" class="form-label"><i class="bi bi-geo-alt"></i> Location</label>
+                            <input type="text" class="form-control" id="location" name="location" 
+                                   placeholder="e.g., Main Street near the park, 123 Oak Avenue" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="pollutant_type" class="form-label"><i class="bi bi-flower1"></i> Pollutant Type</label>
+                            <select class="form-select" id="pollutant_type" name="pollutant_type" required>
+                                <option value="">Select pollutant type...</option>
+                                <option value="Air pollution">🌫️ Air pollution (smoke, fumes)</option>
+                                <option value="Water contamination">💧 Water contamination</option>
+                                <option value="Noise pollution">🔊 Noise pollution</option>
+                                <option value="Waste dumping">♻️ Waste dumping</option>
+                                <option value="Chemical spill">⚠️ Chemical spill</option>
+                                <option value="Industrial emissions">🏭 Industrial emissions</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label"><i class="bi bi-chat-left-text"></i> Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="4"
+                                      placeholder="Describe what you're seeing/hearing/smelling..." required></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="severity" class="form-label"><i class="bi bi-exclamation-triangle"></i> Severity Level</label>
+                            <select class="form-select" id="severity" name="severity">
+                                <option value="1">🟢 Low - Minor issue</option>
+                                <option value="2">🟡 Medium - Noticeable impact</option>
+                                <option value="3">🟠 High - Significant concern</option>
+                                <option value="4">🔴 Very High - Immediate attention needed</option>
+                                <option value="5">⚫ Critical - Emergency situation</option>
+                            </select>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-send"></i> Submit Report
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-4 shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">📝 Tips for Better Reports</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled">
+                        <li><i class="bi bi-camera"></i> Take photos if possible (attach to report)</li>
+                        <li><i class="bi bi-clock"></i> Note the exact time and date</li>
+                        <li><i class="bi bi-geo-alt"></i> Be as specific about location as possible</li>
+                        <li><i class="bi bi-person-badge"></i> Include any identifying information</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

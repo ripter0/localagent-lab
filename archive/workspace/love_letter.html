@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>For My Love</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            background: linear-gradient(135deg, #ffe6e6 0%, #fff0f5 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(255, 182, 193, 0.5);
+            max-width: 600px;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        h1 {
+            color: #d63384;
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(255, 182, 193, 0.5);
+        }
+
+        .heart {
+            font-size: 4em;
+            color: #e91e63;
+            animation: heartbeat 1.5s ease-in-out infinite;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .message {
+            color: #666;
+            line-height: 1.8;
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
+
+        .signature {
+            font-style: italic;
+            color: #d63384;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        .floating-hearts {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .heart-float {
+            position: absolute;
+            font-size: 2em;
+            color: rgba(233, 30, 99, 0.6);
+            animation: floatUp 8s linear infinite;
+        }
+
+        @keyframes floatUp {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #e91e63, #f48fb1);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(233, 30, 99, 0.4);
+        }
+
+        .hidden-message {
+            display: none;
+            margin-top: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #ffe6e6, #fff0f5);
+            border-radius: 15px;
+        }
+
+        .hidden-message.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Envelope Styles */
+        .envelope-container {
+            position: relative;
+            width: 300px;
+            height: 200px;
+            margin: 0 auto;
+            cursor: pointer;
+            transition: transform 0.5s ease;
+        }
+
+        .envelope-container:hover {
+            transform: scale(1.05);
+        }
+
+        .envelope {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: #e91e63;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 5px 15px rgba(233, 30, 99, 0.3);
+        }
+
+        .envelope::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 0;
+            border-left: 150px solid transparent;
+            border-right: 150px solid transparent;
+            border-top: 120px solid #c2185b;
+        }
+
+        .envelope::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 0;
+            border-left: 150px solid transparent;
+            border-right: 150px solid transparent;
+            border-bottom: 120px solid #e91e63;
+        }
+
+        .envelope-flap {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%) rotate(0deg);
+            width: 0;
+            height: 0;
+            border-left: 150px solid transparent;
+            border-right: 150px solid transparent;
+            border-top: 120px solid #f48fb1;
+            transition: transform 0.5s ease, z-index 0.3s ease;
+            z-index: 5;
+        }
+
+        .envelope-flap.open {
+            transform: translateX(-50%) rotate(-180deg);
+            z-index: 1;
+        }
+
+        .letter {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 260px;
+            height: 180px;
+            background: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            transition: transform 0.6s ease, bottom 0.6s ease;
+            z-index: 2;
+            overflow: hidden;
+        }
+
+        .letter.open {
+            transform: translateX(-50%) translateY(-180px) rotate(5deg);
+            bottom: -180px;
+            z-index: 3;
+        }
+
+        .letter-content {
+            font-size: 1em;
+            line-height: 1.6;
+            color: #333;
+            text-align: left;
+        }
+
+        .click-hint {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.2em;
+            color: #e91e63;
+            opacity: 0.8;
+            pointer-events: none;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="floating-hearts" id="hearts"></div>
+    
+    <div class="container">
+        <!-- Envelope on start page -->
+        <div class="envelope-container" id="envelopeContainer">
+            <div class="envelope-flap" id="flap"></div>
+            <div class="letter" id="letter">
+                <div class="letter-content">
+                    <h2 style="color: #e91e63; margin-bottom: 15px;">My Dearest Love</h2>
+                    <p>Every moment with you feels like a beautiful dream I never want to wake from.</p>
+                    <br>
+                    <p>You are my sunshine on cloudy days, my laughter in quiet moments, and the reason my heart beats just a little faster.</p>
+                    <br>
+                    <p>Thank you for being exactly who you are. Thank you for loving me as much as I love you.</p>
+                    <br>
+                    <p>I promise to always cherish you, support you, and stand by your side through all of life's adventures.</p>
+                    <br>
+                    <p style="font-style: italic; color: #d63384;">With all my love,<br>Your forever</p>
+                </div>
+            </div>
+            <div class="click-hint" id="clickHint">❤️ Click to Open ❤️</div>
+        </div>
+
+        <!-- Hidden message that appears after opening -->
+        <div class="hidden-message" id="hiddenMessage">
+            <h1>My Dearest Love</h1>
+            <div class="message">
+                Every moment with you feels like a beautiful dream I never want to wake from.<br><br>
+                You are my sunshine on cloudy days, my laughter in quiet moments, and the reason my heart beats just a little faster.<br><br>
+                Thank you for being exactly who you are. Thank you for loving me as much as I love you.<br><br>
+                I promise to always cherish you, support you, and stand by your side through all of life's adventures.<br><br>
+                With all my love,<br>Your forever
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Create floating hearts
+        const heartsContainer = document.getElementById('hearts');
+        for (let i = 0; i < 15; i++) {
+            const heart = document.createElement('div');
+            heart.className = 'heart-float';
+            heart.innerHTML = '❤️';
+            heart.style.left = Math.random() * 100 + '%';
+            heart.style.animationDelay = Math.random() * 8 + 's';
+            heartsContainer.appendChild(heart);
+        }
+
+        // Envelope interaction
+        const envelopeContainer = document.getElementById('envelopeContainer');
+        const flap = document.getElementById('flap');
+        const letter = document.getElementById('letter');
+        const clickHint = document.getElementById('clickHint');
+        const hiddenMessage = document.getElementById('hiddenMessage');
+
+        envelopeContainer.addEventListener('click', () => {
+            // Open the envelope
+            flap.classList.add('open');
+            letter.classList.add('open');
+            clickHint.style.display = 'none';
+            
+            // Show the hidden message after animation
+            setTimeout(() => {
+                hiddenMessage.classList.add('show');
+                envelopeContainer.style.opacity = '0';
+                envelopeContainer.style.pointerEvents = 'none';
+            }, 800);
+        });
+    </script>
+</body>
+</html>

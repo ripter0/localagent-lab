@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bus Ticket Booking</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+
+        nav {
+            background-color: #333;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        nav a {
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            margin: 0 5px;
+            transition: background-color 0.3s, cursor 0.3s;
+        }
+
+        nav a:hover {
+            background-color: #555;
+            cursor: pointer;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            min-height: calc(100vh - 80px);
+        }
+
+        .section {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        #acquista {
+            background-color: #fff;
+            border-right: 1px solid #ddd;
+        }
+
+        #adv1 {
+            background-color: #4CAF50;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        #adv2 {
+            background-color: #2196F3;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #total-display {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f5e9;
+            border-radius: 4px;
+            font-size: 18px;
+        }
+
+        footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        @media (max-width: 1000px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .section {
+                width: 100%;
+            }
+
+            nav {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            nav a {
+                display: block;
+                margin: 5px auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="#home">Home</a>
+        <a href="#book">Book</a>
+        <a href="#contact">Contact</a>
+    </nav>
+
+    <div class="container">
+        <div id="acquista" class="section">
+            <h2>Acquista Biglietto</h2>
+            <form id="ticket-form">
+                <div class="form-group">
+                    <label for="origin">Provenienza:</label>
+                    <select id="origin">
+                        <option value="Milan">Milano</option>
+                        <option value="Rome">Roma</option>
+                        <option value="Naples">Napoli</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="destination">Destinazione:</label>
+                    <select id="destination">
+                        <option value="Milan">Milano</option>
+                        <option value="Rome">Roma</option>
+                        <option value="Naples">Napoli</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="adults">Numero di adulti:</label>
+                    <input type="number" id="adults" min="1" max="10" value="1">
+                </div>
+
+                <div class="form-group">
+                    <label for="minors">Numero di minori (biglietti ridotti):</label>
+                    <select id="minors">
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                    </select>
+                </div>
+
+                <button type="button" onclick="calculateTotal()">Calcola Totale</button>
+            </form>
+
+            <div id="total-display"></div>
+        </div>
+
+        <div id="adv1" class="section">
+            <h2>Advertising Company</h2>
+            <p>Company advertising section with background image</p>
+        </div>
+
+        <div id="adv2" class="section">
+            <h2>External Advertising</h2>
+            <p>External advertising section with background image</p>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2024 Web Developer - All rights reserved</p>
+    </footer>
+
+    <script>
+        // Price data: route -> { full, reduced }
+        const prices = {
+            'Milan-Rome': { full: 30, reduced: 20 },
+            'Rome-Milan': { full: 30, reduced: 20 },
+            'Milan-Naples': { full: 50, reduced: 40 },
+            'Naples-Milan': { full: 50, reduced: 40 },
+            'Rome-Naples': { full: 40, reduced: 30 },
+            'Naples-Rome': { full: 40, reduced: 30 }
+        };
+
+        // Initialize destination dropdown options dynamically
+        const destinations = ['Milan', 'Rome', 'Naples'];
+        const originSelect = document.getElementById('origin');
+        const destinationSelect = document.getElementById('destination');
+
+        function initDropdowns() {
+            populateDestinationOptions();
+            setupEventListeners();
+        }
+
+        function populateDestinationOptions() {
+            destinations.forEach(dest => {
+                const option = document.createElement('option');
+                option.value = dest;
+                option.textContent = dest;
+                destinationSelect.appendChild(option);
+            });
+        }
+
+        function setupEventListeners() {
+            originSelect.addEventListener('change', updateMinorsOptions);
+            adultsInput.addEventListener('input', updateMinorsOptions);
+        }
+
+        const adultsInput = document.getElementById('adults');
+
+        function updateMinorsOptions() {
+            const adults = parseInt(adultsInput.value) || 0;
+            const minorsSelect = document.getElementById('minors');
+            
+            // Minors cannot exceed total tickets minus at least one adult
+            const maxMinors = (adults + parseInt(minorsSelect.value)) - 1;
+            
+            // Reset and rebuild options
+            minorsSelect.innerHTML = '';
+            for (let i = 0; i <= Math.min(4, adults); i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = i;
+                minorsSelect.appendChild(option);
+            }
+        }
+
+        function calculateTotal() {
+            const origin = originSelect.value;
+            const destination = destinationSelect.value;
+            const adults = parseInt(adultsInput.value) || 0;
+            const minors = parseInt(document.getElementById('minors').value) || 0;
+
+            // Validate: at least one ticket
+            if (adults === 0 && minors === 0) {
+                alert('Devi acquistare almeno un biglietto!');
+                return;
+            }
+
+            // Validate: different origin and destination
+            if (origin === destination) {
+                alert('La provenienza deve essere diversa dalla destinazione!');
+                return;
+            }
+
+            // Validate: minors need at least one adult
+            if (minors > 0 && adults === 0) {
+                alert('I minori non possono viaggiare senza almeno un adulto!');
+                return;
+            }
+
+            // Calculate route key
+            const route = origin + '-' + destination;
+            
+            // Get prices for this route
+            const priceData = prices[route];
+            
+            if (!priceData) {
+                alert('Rotta non valida!');
+                return;
+            }
+
+            // Calculate total
+            const adultPrice = priceData.full;
+            const minorPrice = priceData.reduced;
+            const total = (adults * adultPrice) + (minors * minorPrice);
+
+            // Display result
+            document.getElementById('total-display').innerHTML = 
+                `<strong>Totale:</strong> ${total}€ <br>
+                 Adulti (${adults}): ${(adults * adultPrice)}€ <br>
+                 Minori (${minors}): ${(minors * minorPrice)}€`;
+        }
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', initDropdowns);
+    </script>
+</body>
+</html>

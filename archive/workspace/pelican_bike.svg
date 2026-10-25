@@ -1,0 +1,58 @@
+<svg width="400" height="300" viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="400" height="300" fill="#f0f8ff"/>
+  
+  <!-- Wheels -->
+  <circle cx="150" cy="220" r="40" fill="none" stroke="#333" stroke-width="4"/>
+  <circle cx="250" cy="220" r="40" fill="none" stroke="#333" stroke-width="4"/>
+  
+  <!-- Spokes -->
+  <line x1="150" y1="180" x2="150" y2="260" stroke="#999" stroke-width="1"/>
+  <line x1="110" y1="220" x2="190" y2="220" stroke="#999" stroke-width="1"/>
+  <line x1="150" y1="180" x2="150" y2="260" stroke="#999" stroke-width="1" transform="rotate(45, 150, 220)"/>
+  <line x1="110" y1="220" x2="190" y2="220" stroke="#999" stroke-width="1" transform="rotate(45, 150, 220)"/>
+  
+  <line x1="250" y1="180" x2="250" y2="260" stroke="#999" stroke-width="1"/>
+  <line x1="210" y1="220" x2="290" y2="220" stroke="#999" stroke-width="1"/>
+  <line x1="250" y1="180" x2="250" y2="260" stroke="#999" stroke-width="1" transform="rotate(45, 250, 220)"/>
+  <line x1="210" y1="220" x2="290" y2="220" stroke="#999" stroke-width="1" transform="rotate(45, 250, 220)"/>
+  
+  <!-- Bike Frame -->
+  <path d="M 150 220 L 250 220 L 250 180 L 150 220 Z" fill="none" stroke="#333" stroke-width="4"/>
+  <path d="M 150 220 L 250 180" stroke="#333" stroke-width="4"/>
+  <path d="M 150 220 L 190 160 L 250 180" fill="none" stroke="#333" stroke-width="4"/>
+  
+  <!-- Handlebars -->
+  <circle cx="190" cy="160" r="3" fill="#333"/>
+  <path d="M 190 160 L 250 180" stroke="#333" stroke-width="4"/>
+  
+  <!-- Seat -->
+  <ellipse cx="250" cy="180" rx="15" ry="8" fill="#333"/>
+  
+  <!-- Pelican Body -->
+  <ellipse cx="200" cy="190" rx="60" ry="40" fill="#fff" stroke="#ccc" stroke-width="1"/>
+  
+  <!-- Pelican Head -->
+  <circle cx="170" cy="150" r="25" fill="#fff" stroke="#ccc" stroke-width="1"/>
+  
+  <!-- Pelican Beak -->
+  <path d="M 145 135 Q 165 120 185 135 L 195 170 Q 180 185 160 170 Z" fill="#ff8c00" stroke="#cc6600" stroke-width="1"/>
+  <path d="M 145 135 L 165 120" stroke="#cc6600" stroke-width="1"/>
+  
+  <!-- Pelican Eye -->
+  <circle cx="170" cy="145" r="3" fill="#000"/>
+  
+  <!-- Pelican Wing/Arm on Handlebars -->
+  <path d="M 200 190 Q 210 180 240 175" stroke="#fff" stroke-width="8" fill="none" stroke-linecap="round"/>
+  
+  <!-- Pelican Tail -->
+  <path d="M 260 190 L 280 195 L 260 200 Z" fill="#fff" stroke="#ccc" stroke-width="1"/>
+  
+  <!-- Legs -->
+  <path d="M 170 230 L 160 250" stroke="#8b4513" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 230 230 L 240 250" stroke="#8b4513" stroke-width="4" stroke-linecap="round"/>
+  
+  <!-- Feet -->
+  <ellipse cx="160" cy="250" rx="8" ry="5" fill="#8b4513"/>
+  <ellipse cx="240" cy="250" rx="8" ry="5" fill="#8b4513"/>
+</svg>

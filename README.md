@@ -130,17 +130,22 @@ Findings from the first, smaller version ([v1](bench/RESULTS-v1.md)):
 
 ```
 agent.py              the agent (loop, tools, model call, auto num_ctx)
-tools/                helper scripts (M1: summarize_log.py)
+tools/                helper scripts: backup.py, summarize_log.py (M1)
 bench/                personal benchmark: tasks/, fixtures/ (agent projects), runner, report, RESULTS.md
-tests/                pytest: logging, num_ctx search, output clipping, benchmark checks
+tests/                pytest: logging, num_ctx search, output clipping, benchmark checks, backup
 prompts/              saved system prompts (an old hackathon one)
-docs/SETUP.md         full PC setup and troubleshooting
+docs/SETUP.md         full PC setup, "new PC in 5 steps", troubleshooting
 docs/CURRICULUM.md    milestone -> ai-engineering-from-scratch lessons
-setup/opencode/       working OpenCode config and rules (copy to ~/.config/opencode)
+docs/EXTERNAL.md      things not copied (rizzo-flow, the course, models) and how to restore them exactly
+setup/windows/        restore-settings.ps1: Ollama variables, PATH, OpenCode config
+setup/ollama/         Modelfiles to rebuild my custom models (qwen3.5-fix, qwen-plannig)
+setup/opencode/       working OpenCode config and rules
+archive/              snapshots of workspace/ and logs/ (made by tools/backup.py)
+notes/                plans and prompts from AI sessions (fine-tuning plan, CleanSignal prompts)
 claude-project/       instructions and context for my Claude mentor project
 ```
 
-Not in git: `workspace/` (the agent's sandbox), `logs/` (run logs and the `num_ctx` cache), `.venv/`.
+Not in git, because they're live folders: `workspace/` (the agent's sandbox) and `logs/` (run logs and the `num_ctx` cache). Their snapshot is in `archive/`; refresh it with `python tools/backup.py`. Also not in git: `.venv/`.
 
 ## Settings
 

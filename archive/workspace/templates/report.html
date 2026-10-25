@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Report Pollution - CleanSignal{% endblock %}
+
+{% block content %}
+<div class="report-container">
+    <h1>📢 Report a Pollution Incident</h1>
+    
+    <form id="pollution-form" method="POST" action="/api/incidents">
+        <div class="form-group">
+            <label for="title">Incident Title *</label>
+            <input type="text" id="title" name="title" required placeholder="e.g., Smoke from factory chimney">
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description *</label>
+            <textarea id="description" name="description" rows="5" required placeholder="Describe what you're seeing/hearing/feeling..."></textarea>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="location_lat">Latitude *</label>
+                <input type="number" id="location_lat" name="location_lat" step="0.0001" required placeholder="40.7128">
+            </div>
+
+            <div class="form-group">
+                <label for="location_lon">Longitude *</label>
+                <input type="number" id="location_lon" name="location_lon" step="0.0001" required placeholder="-74.0060">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="incident_type">Incident Type</label>
+            <select id="incident_type" name="incident_type">
+                <option value="air_quality">Air Quality (smoke, fumes, dust)</option>
+                <option value="water_contamination">Water Contamination</option>
+                <option value="noise_pollution">Noise Pollution</option>
+                <option value="waste_management">Waste Management</option>
+                <option value="other">Other</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="severity">Severity Level (1-5) *</label>
+            <input type="number" id="severity" name="severity" min="1" max="5" value="2" required>
+            <small>1=Minor, 5=Critical Emergency</small>
+        </div>
+
+        <div class="form-group">
+            <label for="reporter_name">Your Name *</label>
+            <input type="text" id="reporter_name" name="reporter_name" required placeholder="Your full name">
+        </div>
+
+        <div class="form-group">
+            <label for="contact_email">Contact Email (optional)</label>
+            <input type="email" id="contact_email" name="contact_email" placeholder="your@email.com">
+        </div>
+
+        <button type="submit" class="btn-primary">Submit Report</button>
+    </form>
+
+    <div class="info-box">
+        <h3>📍 Location Help</h3>
+        <p>You can use your browser's geolocation to automatically fill in the coordinates.</p>
+        <button onclick="getLocation()" class="btn-secondary">Use My Location</button>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function getLocation() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(position => {
+            document.getElementById('location_lat').value = position.coords.latitude;
+            document.getElementById('location_lon').value = position.coords.longitude;
+        });
+    } else {
+        alert("Geolocation is not supported by this browser.");
+    }
+}
+</script>
+{% endblock %}

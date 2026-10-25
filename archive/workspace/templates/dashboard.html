@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - CleanSignal{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <h1>📊 Pollution Incident Dashboard</h1>
+    
+    <div class="stats-grid">
+        <div class="stat-card">
+            <h3>Total Incidents</h3>
+            <p id="total-incidents">0</p>
+        </div>
+        <div class="stat-card">
+            <h3>Air Quality Reports</h3>
+            <p id="air-quality-count">0</p>
+        </div>
+        <div class="stat-card">
+            <h3>Water Contamination</h3>
+            <p id="water-contamination-count">0</p>
+        </div>
+        <div class="stat-card">
+            <h3>Pending Reviews</h3>
+            <p id="pending-count">0</p>
+        </div>
+    </div>
+
+    <div class="incidents-list">
+        <h2>Recent Reports</h2>
+        <div id="incidents-container" class="incidents-grid">
+            <p>Loading incidents...</p>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadIncidents() {
+    try {
+        const response = await fetch('/api/incidents');
+        const incidents = await response.json();
+        
+        // Update stats
+        document.getElementById('total-incidents').textContent = incidents.length;
+        document.getElementById('air-quality-count').textContent = incidents.filter(i => i.incident_type === 'air_quality').length;
+        document.getElementById('water-contamination-count').textContent = incidents.filter(i => i.incident_type === 'water_contamination').length;
+        document.getElementById('pending-count').textContent = incidents.filter(i => i.status === 'pending').length;
+        
+        // Render incidents
+        const container = document.getElementById('incidents-container');
+        if (incidents.length === 0) {
+            container.innerHTML = '<p>No incidents reported yet.</p>';
+            return;
+        }
+        
+        container.innerHTML = incidents.map(incident => `
+            <div class="incident-card">
+                <h3>${escapeHtml(incident.title)}</h3>
+                <p class="type">${incident.incident_type.replace('_', ' ').toUpperCase()}</p>
+                <p class="severity">Severity: ${incident.severity}/5</p>
+                <p class="status">Status: ${incident.status}</p>
+                <p>${escapeHtml(incident.description.substring(0, 150))}...</p>
+                <small>Reported: ${new Date(incident.reported_at).toLocaleString()}</small>
+            </div>
+        `).join('');
+    } catch (error) {
+        document.getElementById('incidents-container').innerHTML = '<p>Error loading incidents</p>';
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+loadIncidents();
+</script>
+{% endblock %}

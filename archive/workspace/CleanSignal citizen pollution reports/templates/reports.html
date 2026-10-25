@@ -1,0 +1,44 @@
+{% extends "layout.html" %}
+{% block title %}Reports - CleanSignal{% endblock %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-3">
+        <div class="col-md-6">
+            <h2>📋 Pollution Reports</h2>
+        </div>
+        <div class="col-md-6 text-end">
+            <a href="/new-report" class="btn btn-primary">➕ Report New Issue</a>
+        </div>
+    </div>
+
+    {% if reports %}
+    <div class="row">
+        {% for report in reports %}
+        <div class="col-md-6 mb-4">
+            <div class="card report-card shadow-sm {{ 'severity-high' if report.severity >= 4 else 'severity-medium' if report.severity >= 3 else 'severity-low' }}">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <strong>Report #{{ report.id }}</strong>
+                    <span class="badge bg-{{ 'danger' if report.severity >= 4 else 'warning' if report.severity >= 3 else 'success' }}">
+                        Severity: {{ report.severity }}/5
+                    </span>
+                </div>
+                <div class="card-body">
+                    <h5 class="card-title">📍 {{ report.location }}</h5>
+                    <p class="card-text"><strong>Pollutant:</strong> {{ report.pollutant_type }}</p>
+                    <p class="card-text text-muted">{{ report.description[:100] }}{% if report.description|length > 100 %}...{% endif %}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted"><i class="bi bi-clock"></i> {{ report.timestamp.strftime('%Y-%m-%d %H:%M') if report.timestamp else 'N/A' }}</small>
+                        <span class="badge bg-info">{{ report.status }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        No reports found. Be the first to report pollution in your area!
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

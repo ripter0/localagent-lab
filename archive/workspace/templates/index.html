@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CleanSignal - Pollution Reporting</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">CleanSignal</div>
+            <ul>
+                <li><a href="/home">Home</a></li>
+                <li><a href="/about">About</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section class="hero">
+            <h1>Report Pollution in Your Community</h1>
+            <p>Your voice matters. Help keep our environment clean and safe.</p>
+        </section>
+
+        <section class="report-form">
+            <h2>Submit a New Report</h2>
+            <form id="pollution-form">
+                <div class="form-group">
+                    <label for="location">Location:</label>
+                    <select id="location" name="location" required>
+                        <option value="">Select a location...</option>
+                        <option value="downtown-park">Downtown Park</option>
+                        <option value="industrial-zone-a">Industrial Zone A</option>
+                        <option value="riverside-community">Riverside Community</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="pollutant-type">Pollutant Type:</label>
+                    <select id="pollutant-type" name="pollutant_type" required>
+                        <option value="smoke">Smoke/Air Pollution</option>
+                        <option value="water">Water Contamination</option>
+                        <option value="noise">Noise Pollution</option>
+                        <option value="waste">Waste/Litter</option>
+                        <option value="chemical">Chemical Spill</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="severity">Severity Level:</label>
+                    <input type="range" id="severity" name="severity" min="1" max="5" value="3" required>
+                    <span>Low</span><span>High</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="description">Description:</label>
+                    <textarea id="description" name="description" rows="4" placeholder="Describe what you observed..."></textarea>
+                </div>
+
+                <button type="submit" class="btn-primary">Submit Report</button>
+            </form>
+        </section>
+
+        <section class="recent-reports">
+            <h2>Recent Reports</h2>
+            <div id="reports-list" class="reports-grid"></div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 CleanSignal - Community Environmental Monitoring</p>
+    </footer>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

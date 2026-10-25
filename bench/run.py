@@ -25,7 +25,7 @@ import requests
 
 import agent
 from bench import report
-from bench.tasks import AGENT_TASKS, CHAT_TASKS, needle_tasks
+from bench.tasks import AGENT_TASKS, CHARS_PER_TOKEN, CHAT_TASKS, needle_tasks
 
 RESULTS_DIR = Path(__file__).parent / "results"
 ARTIFACTS_DIR = RESULTS_DIR / "artifacts"
@@ -71,6 +71,9 @@ def run_chat(task, num_ctx):
     seconds = time.time() - t0
     reply = data["message"]["content"]
     ok, detail = task.check(reply)
+    expected = len(task.prompt) / CHARS_PER_TOKEN
+    if expected > 2000 and data.get("prompt_eval_count", 0) < 0.6 * expected:  # Ollama cut it to fit num_ctx
+        ok, detail = False, f"prompt truncated by Ollama: {data.get('prompt_eval_count')} of ~{expected:.0f} tokens"
     gen_s = data.get("eval_duration", 0) / 1e9
     read_s = data.get("prompt_eval_duration", 0) / 1e9
     return {"ok": ok, "detail": detail, "seconds": round(seconds, 2), "reply": reply[:500],

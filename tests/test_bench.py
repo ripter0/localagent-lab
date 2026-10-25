@@ -63,7 +63,7 @@ def test_haystack_contains_needle_at_depth():
     text = tasks.haystack(2000, "NEEDLE", 0.5)
     lines = text.splitlines()
     assert 0.4 < lines.index("NEEDLE") / len(lines) < 0.6
-    assert 7000 < len(text) < 9000  # ~4 chars per token
+    assert 5000 < len(text) < 6500  # ~2.8 chars per token
 
 
 # ---------- agent checks: reference solutions pass, untouched files fail ----------
@@ -151,6 +151,23 @@ def test_scores_weigh_categories_equally():
     scores = report.category_scores(results)
     assert scores == {"reasoning": 0.0, "code": 1.0}
     assert report.overall(scores) == 0.5
+
+
+def test_partial_rerun_replaces_only_its_tasks():
+    full = fake_run("m", [("code", False), ("reasoning", False)])  # ids t0 (code), t1 (reasoning)
+    rerun = fake_run("m", [("code", True)])  # id t0 again
+    merged = report.latest_per_model([full, rerun])["m"]["results"]
+    assert sorted((r["id"], r["ok"]) for r in merged) == [("t0", True), ("t1", False)]
+
+
+def test_truncated_prompt_counts_as_failure(monkeypatch):
+    from bench import run
+    t = tasks.needle_tasks(8192)[0]
+    code = t.check.__defaults__[0]
+    monkeypatch.setattr(agent, "post_chat", lambda p: {"message": {"content": f'{{"code": "{code}"}}'},
+                                                        "prompt_eval_count": 100})
+    r = run.run_chat(t, 8192)
+    assert not r["ok"] and "truncated" in r["detail"]
 
 
 def test_markdown_ranks_models(tmp_path):

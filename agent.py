@@ -27,7 +27,7 @@ WORKDIR = Path("workspace").resolve()
 WORKDIR.mkdir(exist_ok=True)
 MAX_STEPS = 50
 MAX_INVALID = 3  # stop after this many invalid replies in a row
-THINK = False  # thinking mode; off by default (it gave empty replies with format json)
+THINK = os.environ.get("AGENT_THINK") == "1"  # thinking mode: smarter, ~2.5x slower (see bench/)
 MAX_OUTPUT = 4000  # chars of tool output sent back; set from NUM_CTX at startup
 
 # run_command uses shell=True: cmd.exe on Windows, /bin/sh on Linux/WSL
@@ -251,7 +251,7 @@ if __name__ == "__main__":
     NUM_CTX = pick_num_ctx(MODEL)
     # ~4 chars per token, so one tool result can fill at most ~1/4 of the context
     MAX_OUTPUT = NUM_CTX
-    print(f"Model: {MODEL}, num_ctx: {NUM_CTX}, max tool output: {MAX_OUTPUT} chars")
+    print(f"Model: {MODEL}, num_ctx: {NUM_CTX}, max tool output: {MAX_OUTPUT} chars, thinking: {THINK}")
     while True:
         task = input("\nTask (empty to quit): ").strip()
         if not task:

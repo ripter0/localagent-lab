@@ -40,7 +40,7 @@ def gen_speed(results):
 def read_speed(results):
     speeds = [r["prompt_tok_per_s"] for r in results
               if r["category"] == "long-context" and r.get("prompt_tok_per_s")]
-    return max(speeds) if speeds else None
+    return statistics.median(speeds) if speeds else None
 
 
 def load_runs(results_dir):
@@ -53,10 +53,15 @@ def load_runs(results_dir):
 
 
 def latest_per_model(runs):
-    latest = {}
+    """Newest result of every task per model, so a partial re-run (--only) updates just those tasks."""
+    merged = {}
     for run in runs:  # files are sorted by timestamp, so later ones win
-        latest[run["meta"]["model"]] = run
-    return latest
+        model, prev = run["meta"]["model"], merged.get(run["meta"]["model"])
+        new_ids = {r["id"] for r in run["results"]}
+        kept = [r for r in prev["results"] if r["id"] not in new_ids] if prev else []
+        merged[model] = {**run, "meta": {**(prev["meta"] if prev else {}), **run["meta"]},
+                         "results": kept + run["results"]}
+    return merged
 
 
 def pct(x):
@@ -88,18 +93,19 @@ def build_markdown(runs, results_dir):
     # Leaderboard
     md += ["## Leaderboard", "",
            "| # | Model | **Overall** | " + " | ".join(LABELS[c] for c in CATEGORIES) +
-           " | Speed | Reads | Context | GPU | Date |",
-           "|---|---|---|" + "---|" * len(CATEGORIES) + "---|---|---|---|---|"]
+           " | Time | Speed | Reads | Context | GPU | Date |",
+           "|---|---|---|" + "---|" * len(CATEGORIES) + "---|---|---|---|---|---|"]
     for i, (score, model, run, scores) in enumerate(rows, 1):
         m = run["meta"]
         speed, read = gen_speed(run["results"]), read_speed(run["results"])
+        minutes = sum(r.get("seconds", 0) for r in run["results"]) / 60
         md.append(f"| {i} | `{model}` | **{score:.0%}** | " +
                   " | ".join(pct(scores.get(c)) for c in CATEGORIES) +
-                  f" | {f'{speed:.0f} tok/s' if speed else '–'} | {f'{read:,.0f} tok/s' if read else '–'}"
+                  f" | {minutes:.1f} min | {f'{speed:.0f} tok/s' if speed else '–'} | {f'{read:,.0f} tok/s' if read else '–'}"
                   f" | {m['num_ctx']:,} | {m.get('gpu_percent', '–')}% · {m.get('size_gb', '–')} GB"
                   f" | {m['date'][:10]} |")
     md += ["", "Overall is the mean of the category scores, so each category weighs the same. "
-           "*Speed* = generated tokens per second. *Reads* = prompt tokens per second on the "
+           "*Time* = all tasks added up. *Speed* = generated tokens per second. *Reads* = prompt tokens per second on the "
            "long-context tasks. *Context* = `num_ctx`, the largest that fits 100% on the GPU.", ""]
 
     # Chart (GitHub renders mermaid)

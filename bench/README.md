@@ -4,6 +4,29 @@ A benchmark made for **my** use: the agent's JSON format, small code tasks, Ital
 
 **Results: [RESULTS.md](RESULTS.md)**: leaderboard, chart, every task, and the pelican gallery.
 
+## Findings (2026-10-25, qwen3.5:9b, 1 run per task)
+
+1. **Thinking mode is the biggest lever: 80% → 97%.**
+   - Reasoning went from 20% to 80%. Without thinking, the model has to answer instantly, and it got 53 − 7 = 41-style mistakes; with thinking it works them out.
+   - Instructions went 75% → 100% (the "no letter e" sentence) and Italian 67% → 100% (it answered "Padre" for Italy's longest river, then "Po" with thinking).
+   - **The cost:** 12.0 min instead of 4.6 for the whole benchmark, about 2.6× slower.
+2. **For agent tasks, thinking doesn't help yet.**
+   - Both modes passed all 6 agent tasks, with the same number of steps. Thinking was about 30% slower.
+   - So the agent default stays *off*, and you can turn it on for hard tasks with `set AGENT_THINK=1`.
+   - The Oct 21 runs gave empty replies with thinking and JSON. That didn't happen here, with 188k context and a bigger `num_predict`. The cause isn't proven.
+3. **Code is solid:** 4/4 in both modes, checked by hidden tests.
+4. **Long context really works.**
+   - Both modes found the hidden code at **141,302 real tokens**, 75% of the context.
+   - The model reads about 2,600 to 3,900 tokens/s, so a 141k prompt takes about 55 s just to read.
+5. **Still hard: counting letters.** "How many r's in strawberry raspberry" failed in both modes (answers 4 and 5, correct is 6). Models see *tokens*, not letters. This is a famous weakness of LLMs.
+6. **Two bugs in my own benchmark**, found by checking a result that looked suspicious:
+   - **Wrong token estimate.** I assumed 4 characters per token, but log lines full of numbers average **2.8**. My "141k" test was really about 200k tokens, more than the context.
+   - **Silent cutting.** Ollama then **cut the prompt silently to half the context** (94,210 tokens). The hidden code was lost, and the model "failed" a test it never really got. The benchmark now detects cut prompts and reports them.
+   - **Faked speed.** The second run's "read speed" was faked by Ollama's prompt cache. Each haystack now gets a random first line, so it can't be reused.
+   - Lesson: **check a surprising result before you believe it.**
+
+One run per task means a single pass or fail is partly luck. Run `--repeat 3` before trusting a difference of one or two tasks.
+
 ## Run it
 
 From the repo root, in a Windows `cmd` (Ollama must be running):

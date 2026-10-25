@@ -1,0 +1,74 @@
+{
+ "meta": {
+  "model": "qwen3.5:9b",
+  "date": "2026-10-25T18:43:05",
+  "num_ctx": 188416,
+  "think": false,
+  "repeat": 1,
+  "size_gb": 9.01,
+  "gpu_percent": 100,
+  "ollama": "0.40.11",
+  "settings": {
+   "OLLAMA_FLASH_ATTENTION": "1",
+   "OLLAMA_KV_CACHE_TYPE": "q8_0"
+  }
+ },
+ "results": [
+  {
+   "ok": true,
+   "detail": "{\"code\": \"7391\"}",
+   "seconds": 3.44,
+   "reply": "{\"code\": \"7391\"}",
+   "tokens_out": 10,
+   "tok_per_s": 49.8,
+   "prompt_tokens": 4066,
+   "prompt_tok_per_s": 3525.5,
+   "id": "needle-4k",
+   "category": "long-context",
+   "kind": "chat",
+   "attempt": 1
+  },
+  {
+   "ok": true,
+   "detail": "{\"code\": \"7782\"}",
+   "seconds": 6.48,
+   "reply": "{\"code\": \"7782\"}",
+   "tokens_out": 10,
+   "tok_per_s": 53.7,
+   "prompt_tokens": 16038,
+   "prompt_tok_per_s": 3844.5,
+   "id": "needle-16k",
+   "category": "long-context",
+   "kind": "chat",
+   "attempt": 1
+  },
+  {
+   "ok": true,
+   "detail": "{\"code\": \"8173\"}",
+   "seconds": 21.98,
+   "reply": "{\"code\": \"8173\"}",
+   "tokens_out": 10,
+   "tok_per_s": 47.0,
+   "prompt_tokens": 63944,
+   "prompt_tok_per_s": 3268.7,
+   "id": "needle-64k",
+   "category": "long-context",
+   "kind": "chat",
+   "attempt": 1
+  },
+  {
+   "ok": true,
+   "detail": "{\"code\": \"8564\"}",
+   "seconds": 57.88,
+   "reply": "{\"code\": \"8564\"}",
+   "tokens_out": 10,
+   "tok_per_s": 37.7,
+   "prompt_tokens": 141302,
+   "prompt_tok_per_s": 2570.4,
+   "id": "needle-141k",
+   "category": "long-context",
+   "kind": "chat",
+   "attempt": 1
+  }
+ ]
+}

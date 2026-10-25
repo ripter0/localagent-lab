@@ -225,11 +225,14 @@ CITIES = ["Torino", "Napoli", "Bari", "Genova", "Bologna", "Firenze", "Palermo",
 WEATHER = ["sunny", "rainy", "windy", "foggy", "cloudy", "snowy"]
 
 
+CHARS_PER_TOKEN = 2.8  # measured on these log lines with qwen3.5 (numbers tokenize badly; prose is ~4)
+
+
 def haystack(n_tokens, needle, depth, seed=0):
-    """About n_tokens of boring log lines (~4 characters per token), with the needle at `depth` (0-1)."""
+    """About n_tokens of boring log lines, with the needle at `depth` (0-1)."""
     rnd = random.Random(seed)
     lines, chars = [], 0
-    while chars < n_tokens * 4:
+    while chars < n_tokens * CHARS_PER_TOKEN:
         line = (f"Log {len(lines):06d}: in {rnd.choice(CITIES)} the weather was {rnd.choice(WEATHER)} "
                 f"and {rnd.randint(10, 999)} people took the bus.")
         lines.append(line)
@@ -241,11 +244,12 @@ def haystack(n_tokens, needle, depth, seed=0):
 def needle_tasks(num_ctx):
     """Haystacks of growing size, up to ~75% of the context the model got."""
     sizes = [s for s in (4_000, 16_000, 64_000) if s < num_ctx * 0.75] + [int(num_ctx * 0.75)]
+    salt = f"Session {random.randrange(16**8):08x}\n"  # new first line each run: Ollama can't reuse a cached prompt
     tasks = []
     for i, size in enumerate(sorted(set(sizes))):
         code = str(7000 + 391 * (i + 1))
         depth = [0.5, 0.25, 0.75, 0.1][i % 4]
-        text = haystack(size, f"IMPORTANT: the secret vault code is {code}.", depth, seed=i)
+        text = salt + haystack(size, f"IMPORTANT: the secret vault code is {code}.", depth, seed=i)
         tasks.append(Task(f"needle-{size // 1000}k", "long-context", "chat",
                           text + '\n\nWhat is the secret vault code? Reply only with JSON: {"code": "<code>"}.',
                           lambda r, code=code: (code in (r or ""), (r or "")[:60]),

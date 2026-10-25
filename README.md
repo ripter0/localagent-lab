@@ -53,7 +53,7 @@ python agent.py
 On startup it prints:
 
 ```
-Model: qwen3.5:9b, num_ctx: 188416, max tool output: 188416 chars
+Model: qwen3.5:9b, num_ctx: 188416, max tool output: 188416 chars, thinking: False
 
 Task (empty to quit):
 ```
@@ -78,12 +78,29 @@ Full PC setup, including Ollama settings, PATH, OpenCode and troubleshooting: **
 | OpenCode with the local model | ✅ | Course lesson explained in 14 s; clean 3-line edit on a step-by-step prompt |
 | Stops after 3 invalid replies in a row, optional time limit | ✅ | no more 50-step `invalid_format` loops |
 | Personal benchmark (`bench/`) | ✅ | 7 categories, 31 tasks, leaderboard in [bench/RESULTS.md](bench/RESULTS.md) |
-| Tests | ✅ | 24 passing: `uv run pytest` (WSL) |
+| Tests | ✅ | 26 passing: `uv run pytest` (WSL) |
 | Log summarizer `tools/summarize_log.py` | ⏳ | M1: empty, I write it myself |
 
 Known limits:
 - **Model size:** it's a 9B model. Great for focused tasks, weak at big multi-file changes, and it sometimes says "done" too early.
 - **Context speed:** big contexts fill up as files are read, so steps get slower over a long run. One focused task per run works best.
+
+## Benchmark
+
+[`bench/`](bench) is a **personal benchmark**: 31 tasks I care about, all checked automatically. It covers the agent's JSON format, instructions, reasoning, code with hidden tests, Italian, finding a needle in up to 141k tokens, and 6 real agent runs. One of those is drawing a pelican on a bicycle.
+
+```bash
+python -m bench.run qwen3.5:9b qwen3.5:9b+think
+```
+
+Latest results ([full leaderboard](bench/RESULTS.md)):
+
+| Model | Overall | Reasoning | Agent | Time |
+|---|---|---|---|---|
+| `qwen3.5:9b+think` | **97%** | 80% | 100% | 12.0 min |
+| `qwen3.5:9b` | **80%** | 20% | 100% | 4.6 min |
+
+Thinking mode fixes reasoning but costs about 2.6× the time. For agent tasks both scored the same. More findings: [bench/README.md](bench/README.md).
 
 ## Milestones
 
@@ -95,9 +112,9 @@ Known limits:
 | M3 | Tools | `list_dir`, `read_file`, `write_file` restricted to `workspace/` | code exists |
 | M4 | The loop | A task done end to end; `run_command` needs approval | code exists |
 | M5 | Logging | Every step saved to JSONL | code exists |
-| M6 | Eval harness | 10 pytest tasks, one command prints a results table | |
-| M7 | Better tools and safety | `replace_in_file`, step and time limits, sandbox | |
-| M8 | Model comparison | 3 models × 2 prompts in a table | |
+| M6 | Eval harness | 10 pytest tasks, one command prints a results table | code exists (`bench/`) |
+| M7 | Better tools and safety | `replace_in_file`, step and time limits, sandbox | partly: limits done |
+| M8 | Model comparison | 3 models × 2 prompts in a table | ready: needs more models pulled |
 | M9 | Advisor mode | `profile.md`, `notes.md`, daily plan | |
 | M10 | Decider experiment | One decision point replaced by a small model and compared | |
 | M11 | Packaging | README, results, short demo | |
@@ -126,4 +143,5 @@ Not in git: `workspace/` (the agent's sandbox), `logs/` (run logs and the `num_c
 |---|---|---|
 | `AGENT_MODEL` | `qwen3.5:9b` | Ollama model to use |
 | `AGENT_NUM_CTX` | auto | Force a context size instead of measuring |
+| `AGENT_THINK` | off | `1` turns thinking mode on: much better reasoning, ~2.5× slower ([benchmark](bench/RESULTS.md)) |
 | `OLLAMA_URL` | `http://localhost:11434/api/chat` | Where Ollama is |

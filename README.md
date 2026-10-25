@@ -14,7 +14,7 @@ ollama pull qwen3.5:9b
 python agent.py
 ```
 
-Set `AGENT_MODEL` to try another model. Tests run in WSL with `uv run pytest`.
+To try another model in `cmd`, run `set AGENT_MODEL=gemma4:12b` and then `python agent.py`. Tests run in WSL with `uv run pytest`.
 
 Check `ollama ps` while it runs: the model should show 100% GPU. Each run writes a step log to `logs/<timestamp>.jsonl`.
 

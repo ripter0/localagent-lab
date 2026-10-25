@@ -1,10 +1,10 @@
 """
 Minimal local coding agent for Ollama.
 
-Setup:
-    uv sync
-    ollama list            # pick a model name
-    AGENT_MODEL=qwen3.5:9b uv run python agent.py
+Setup (Windows cmd, where Ollama runs):
+    pip install requests
+    python agent.py
+    set AGENT_MODEL=gemma4:12b    # optional: another model from `ollama list`
 
 The agent works only inside ./workspace. Shell commands need your approval.
 """

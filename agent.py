@@ -160,7 +160,8 @@ def fits_on_gpu(model, num_ctx):
     }, timeout=600)
     r.raise_for_status()
     loaded = requests.get(f"{OLLAMA_BASE}/api/ps", timeout=60).json()["models"]
-    m = next(m for m in loaded if m["name"] == model or m["model"] == model)
+    names = {model, f"{model}:latest"}  # `ollama ps` shows "name:latest" for models created without a tag
+    m = next(m for m in loaded if m["name"] in names or m["model"] in names)
     return m["size_vram"] >= m["size"]
 
 

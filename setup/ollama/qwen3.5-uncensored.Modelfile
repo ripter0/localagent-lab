@@ -1,0 +1,22 @@
+# Download the .gguf first (8.0 GB) into a folder of its own, put this Modelfile next to it, then run there:
+#   ollama create qwen3.5-uncensored -f qwen3.5-uncensored.Modelfile
+# https://huggingface.co/DavidAU/Qwen3.5-9B-The-Defiant-Fable-Uncensored-Heretic-NEO-IMATRIX-MAX-MTP-GGUF/resolve/main/Qwen3.5-9B-The-Defiant-Fable-Uncnr-Heretic-NEO-MAX-Q6_K.gguf
+# Measured 2026-10-25: 49 tok/s, num_ctx 114,688 at 100% GPU (10 GB), RTX 4070 SUPER, q8_0 KV cache
+# qwen3.5-uncensored: DavidAU "Qwen3.5-9B The Defiant Fable Uncensored Heretic" NEO-MAX Q6_K
+# Source: https://huggingface.co/DavidAU/Qwen3.5-9B-The-Defiant-Fable-Uncensored-Heretic-NEO-IMATRIX-MAX-MTP-GGUF
+# File:   Qwen3.5-9B-The-Defiant-Fable-Uncnr-Heretic-NEO-MAX-Q6_K.gguf
+# sha256: be2e829c3cb38fc98ec53ee25311a4fa6a8437463f974fded6ce1c052c3cd643
+# Build:  ollama create qwen3.5-uncensored -f Modelfile   (run in the folder with the .gguf)
+FROM ./Qwen3.5-9B-The-Defiant-Fable-Uncnr-Heretic-NEO-MAX-Q6_K.gguf
+
+# Same chat format handling as the official qwen3.5 models in Ollama
+RENDERER qwen3.5
+PARSER qwen3.5
+
+# The author's "instruct (non-thinking)" settings. agent.py and the benchmark override temperature.
+PARAMETER temperature 0.7
+PARAMETER top_p 0.8
+PARAMETER top_k 20
+PARAMETER min_p 0
+PARAMETER presence_penalty 1.5
+PARAMETER repeat_penalty 1

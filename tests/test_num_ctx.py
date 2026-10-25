@@ -45,6 +45,23 @@ def test_env_var_overrides(monkeypatch):
     assert agent.pick_num_ctx("m") == 4096
 
 
+def test_fits_on_gpu_finds_models_shown_as_latest(monkeypatch):
+    class Reply:
+        def __init__(self, data):
+            self.data = data
+
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return self.data
+
+    ps = {"models": [{"name": "custom:latest", "model": "custom:latest", "size": 10, "size_vram": 10}]}
+    monkeypatch.setattr(agent.requests, "post", lambda *a, **k: Reply({}))
+    monkeypatch.setattr(agent.requests, "get", lambda *a, **k: Reply(ps))
+    assert agent.fits_on_gpu("custom", 8192)  # asked without the tag
+
+
 def test_clip_keeps_short_output(monkeypatch):
     monkeypatch.setattr(agent, "MAX_OUTPUT", 10)
     assert agent.clip("short") == "short"

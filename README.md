@@ -4,14 +4,17 @@ A local-first coding agent in plain Python, running free open models through [Ol
 
 `agent.py` is a JSON-action loop with the tools `list_dir`, `read_file`, `write_file`, `run_command` and `finish`. Files are restricted to `./workspace`, and every shell command needs your approval.
 
-## Setup (WSL2 Ubuntu)
+## Setup
+
+The model runs in the Ollama app on Windows. Run the agent from Windows too: inside WSL, `localhost:11434` does not reach Windows Ollama.
 
 ```bash
-uv sync
+pip install requests
 ollama pull qwen3.5:9b
-uv run pytest
-AGENT_MODEL=qwen3.5:9b uv run python agent.py
+python agent.py
 ```
+
+Set `AGENT_MODEL` to try another model. Tests run in WSL with `uv run pytest`.
 
 Check `ollama ps` while it runs: the model should show 100% GPU. Each run writes a step log to `logs/<timestamp>.jsonl`.
 

@@ -26,7 +26,7 @@ NUM_CTX = CTX_STEP  # replaced at startup by pick_num_ctx()
 WORKDIR = Path("workspace").resolve()
 WORKDIR.mkdir(exist_ok=True)
 MAX_STEPS = 50
-MAX_OUTPUT = 4000  # characters of tool output sent back to the model
+MAX_OUTPUT = 4000  # chars of tool output sent back; set from NUM_CTX at startup
 
 # run_command uses shell=True: cmd.exe on Windows, /bin/sh on Linux/WSL
 SHELL = "Windows cmd.exe" if platform.system() == "Windows" else "Linux /bin/sh"
@@ -98,6 +98,13 @@ def run_command(command):
         return f"exit code {r.returncode}\nstdout:\n{r.stdout}\nstderr:\n{r.stderr}"
     except subprocess.TimeoutExpired:
         return "Command timed out after 30 seconds."
+
+
+def clip(text):
+    """Cut tool output to MAX_OUTPUT and say so, so the model knows it saw only part."""
+    if len(text) <= MAX_OUTPUT:
+        return text
+    return text[:MAX_OUTPUT] + f"\n[truncated: showed {MAX_OUTPUT} of {len(text)} characters]"
 
 
 TOOLS = {"list_dir": list_dir, "read_file": read_file,
@@ -200,10 +207,9 @@ def run_agent(task):
             except Exception as e:
                 result = f"Tool error: {e}"
 
-        log_step(log_file, step=step, tool=tool, args=args,
-                 result=str(result)[:MAX_OUTPUT], latency=latency)
-        messages.append({"role": "user",
-                         "content": f"Tool result:\n{str(result)[:MAX_OUTPUT]}"})
+        result = clip(str(result))
+        log_step(log_file, step=step, tool=tool, args=args, result=result, latency=latency)
+        messages.append({"role": "user", "content": f"Tool result:\n{result}"})
     log_step(log_file, event="step_limit")
     print("\nStopped: reached the step limit.")
 
@@ -211,7 +217,9 @@ def run_agent(task):
 if __name__ == "__main__":
     print(f"Workspace: {WORKDIR}")
     NUM_CTX = pick_num_ctx(MODEL)
-    print(f"Model: {MODEL}, num_ctx: {NUM_CTX}")
+    # ~4 chars per token, so one tool result can fill at most ~1/4 of the context
+    MAX_OUTPUT = NUM_CTX
+    print(f"Model: {MODEL}, num_ctx: {NUM_CTX}, max tool output: {MAX_OUTPUT} chars")
     while True:
         task = input("\nTask (empty to quit): ").strip()
         if not task:

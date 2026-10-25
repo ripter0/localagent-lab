@@ -43,3 +43,15 @@ def test_cached_value_reused_if_it_still_fits(monkeypatch, tmp_path):
 def test_env_var_overrides(monkeypatch):
     monkeypatch.setenv("AGENT_NUM_CTX", "4096")
     assert agent.pick_num_ctx("m") == 4096
+
+
+def test_clip_keeps_short_output(monkeypatch):
+    monkeypatch.setattr(agent, "MAX_OUTPUT", 10)
+    assert agent.clip("short") == "short"
+
+
+def test_clip_marks_truncated_output(monkeypatch):
+    monkeypatch.setattr(agent, "MAX_OUTPUT", 10)
+    out = agent.clip("x" * 25)
+    assert out.startswith("x" * 10)
+    assert "[truncated: showed 10 of 25 characters]" in out

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  // Local models through Ollama (context size comes from OLLAMA_CONTEXT_LENGTH)
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Ollama (local)",
+      "options": { "baseURL": "http://localhost:11434/v1" },
+      "models": {
+        // reasoningEffort none: with thinking on, qwen3.5 often returns an empty answer after reading files
+        "qwen3.5:9b": { "name": "Qwen 3.5 9B (local)", "tools": true, "options": { "reasoningEffort": "none" } }
+      }
+    }
+  },
+  "model": "ollama/qwen3.5:9b"
+}

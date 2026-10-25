@@ -30,7 +30,7 @@ flowchart TD
     J -- no --> E["Tell it: invalid format"] --> M
     J -- yes --> F{"tool == finish?"}
     F -- yes --> D["Print summary, stop"]
-    F -- no --> X["Run the tool<br/>list_dir / read_file / write_file / run_command"]
+    F -- no --> X["Run the tool<br/>list_dir / read_file / write_file<br/>replace_in_file / run_command"]
     X --> L["Log the step to logs/*.jsonl"]
     L --> S{"Step 50?"}
     S -- no --> M
@@ -68,7 +68,7 @@ Full PC setup, including Ollama settings, PATH, OpenCode and troubleshooting: **
 
 | Feature | Status | Measured |
 |---|---|---|
-| Agent loop with 4 tools and `finish` | ✅ | "pelican SVG" task done in 3 steps, 32 s |
+| Agent loop with 5 tools and `finish` (incl. `replace_in_file`) | ✅ | "pelican SVG" task done in 3 steps, 32 s |
 | JSON replies from qwen3.5:9b | ✅ | `think: false` fixed the empty-reply loops seen on Oct 21 |
 | Sandbox (`workspace/`) and command approval | ✅ | |
 | Per-step JSONL logs with latency | ✅ | `logs/<timestamp>.jsonl` |
@@ -77,7 +77,7 @@ Full PC setup, including Ollama settings, PATH, OpenCode and troubleshooting: **
 | Ollama flash attention and `q8_0` cache | ✅ | 131k context: 9.95 GB spilling → 7.8 GB on GPU |
 | OpenCode with the local model | ✅ | Course lesson explained in 14 s; clean 3-line edit on a step-by-step prompt |
 | Stops after 3 invalid replies in a row, optional time limit | ✅ | no more 50-step `invalid_format` loops |
-| Personal benchmark (`bench/`) | ✅ | 79 tasks in 8 categories, 18 agent projects, 95% intervals ([bench/](bench/README.md)) |
+| Personal benchmark (`bench/`) | ✅ | 80 tasks in 8 categories, 18 agent projects, 95% intervals ([bench/](bench/README.md)) |
 | Tests | ✅ | 130 passing, on WSL and Windows: `uv run pytest` |
 | Log summarizer `tools/summarize_log.py` | ⏳ | M1: empty, I write it myself |
 
@@ -87,7 +87,7 @@ Known limits:
 
 ## Benchmark
 
-[`bench/`](bench) is a **personal benchmark** of 79 tasks in 8 categories, all checked automatically. It covers:
+[`bench/`](bench) is a **personal benchmark** of 80 tasks in 8 categories, all checked automatically. It covers:
 - the agent's JSON format
 - instructions, reasoning, and code with hidden tests
 - Italian
@@ -103,9 +103,12 @@ python -m bench.run qwen3.5:9b gemma4:12b --suite full
 
 `--suite full` runs everything 3 times, about 1 to 1.5 hours per model. Results: [bench/RESULTS.md](bench/RESULTS.md). The guide and how to add tasks: [bench/README.md](bench/README.md).
 
-Findings from the first, smaller version ([v1](bench/RESULTS-v1.md)):
-- `qwen3.5:9b` scored **80%** without thinking and **97%** with it.
-- Reasoning went from 20% to 80%, but thinking took about 2.6× the time.
+Findings so far:
+- **[v1](bench/RESULTS-v1.md):** `qwen3.5:9b` scored **80%** without thinking and **97%** with it. Reasoning went from 20% to 80%, but thinking took about 2.6× the time.
+- **[v2](bench/RESULTS-v2.md):** `qwen3.5-uncensored` (Q6) scored **88%** and `qwen3.5:9b` (Q4) **84%**. The confidence intervals overlap, so that's no clear winner.
+  - Both failed the same agent tasks, because of limits in `agent.py`.
+  - Both started reading a passwords file to upload it.
+- **v3** fixes all of that: `replace_in_file`, ignoring unknown arguments, safety rules, a speed check. [What changed](bench/README.md#v3-fixes-for-what-v2-found).
 
 ## Milestones
 
@@ -118,7 +121,7 @@ Findings from the first, smaller version ([v1](bench/RESULTS-v1.md)):
 | M4 | The loop | A task done end to end; `run_command` needs approval | code exists |
 | M5 | Logging | Every step saved to JSONL | code exists |
 | M6 | Eval harness | 10 pytest tasks, one command prints a results table | code exists (`bench/`) |
-| M7 | Better tools and safety | `replace_in_file`, step and time limits, sandbox | partly: limits done |
+| M7 | Better tools and safety | `replace_in_file`, step and time limits, sandbox | mostly: replace_in_file, limits, allowlist (bench) |
 | M8 | Model comparison | 3 models × 2 prompts in a table | ready: needs more models pulled |
 | M9 | Advisor mode | `profile.md`, `notes.md`, daily plan | |
 | M10 | Decider experiment | One decision point replaced by a small model and compared | |

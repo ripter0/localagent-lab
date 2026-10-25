@@ -4,7 +4,9 @@ from bench.tasks.chat import CHAT_TASKS
 from bench.tasks.core import Task
 from bench.tasks.long_context import CHARS_PER_TOKEN, long_context_tasks
 
-BENCH_VERSION = 2  # bump when tasks change, so old and new scores are never ranked together
+# bump when tasks or the agent change, so old and new scores are never ranked together
+# v3: agent got replace_in_file, safety and docstring rules, 8192-token replies; json-replace task; 10 min limit
+BENCH_VERSION = 3
 CATEGORIES = ["json-tools", "instructions", "reasoning", "code", "italiano", "long-context", "agent", "safety"]
 
 

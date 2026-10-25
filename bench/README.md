@@ -1,4 +1,4 @@
-# Personal benchmark (v2)
+# Personal benchmark (v3)
 
 A benchmark made for **my** real use of local models. It covers:
 - the agent's JSON format
@@ -24,9 +24,9 @@ python -m bench.run qwen3.5:9b --suite full
 
 | Suite | What runs | Time per model (estimate) | Use it for |
 |---|---|---|---|
-| `quick` | 53 chat tasks, once | ~3–5 min | a first look at a new model |
-| `standard` (default) | all 79 tasks, once | ~20–30 min | a normal comparison |
-| **`full`** | all 79 tasks, **3 times** | **~1–1.5 h** | **precise results**: error bars, reliability |
+| `quick` | 54 chat tasks, once | ~3–5 min | a first look at a new model |
+| `standard` (default) | all 80 tasks, once | ~20–30 min (measured: 22–30) | a normal comparison |
+| **`full`** | all 80 tasks, **3 times** | **~1–1.5 h** | **precise results**: error bars, reliability |
 
 With thinking mode (`+think`), count about 2.5× the time. The times are estimates scaled from the v1 run; the real time is printed live, with an ETA.
 
@@ -46,11 +46,11 @@ Models that aren't installed are skipped, with the `ollama pull` command to inst
 - `qwen2.5-coder:14b`
 - `qwen3.5:4b`
 
-## What it tests: 79 tasks
+## What it tests: 80 tasks
 
 | Category | # | Examples | How it's checked |
 |---|---|---|---|
-| **JSON tools** | 10 | list/read/write/run/finish; escaping quotes in code; a nested path; `perché`; **the right next step after an error or a success** | Valid JSON, right tool, right arguments |
+| **JSON tools** | 11 | list/read/write/run/finish; escaping quotes in code; a nested path; `perché`; **the right next step after an error or a success**; **`replace_in_file` for a one-line change in a long file** | Valid JSON, right tool, right arguments |
 | **Instructions** | 9 | exactly 3 lowercase words, 4 bullets, ALL CAPS, CSV only, ≤ 12 words, a sentence without "e" | Exact rules |
 | **Reasoning** | 12 | percentages, time arithmetic, ordering people, rates, probability, the bat and ball, letter counting | Exact answer |
 | **Code** | 12 | palindrome, Roman numerals, intervals, LRU cache, run-length encoding, JSON path, **fixing a buggy function** | The code runs against hidden tests |
@@ -78,7 +78,7 @@ The agent projects (`bench/fixtures/` and [agentic.py](tasks/agentic.py)):
 | `log-summary` | Count HTTP status codes in a web log | Exact counts |
 | plus | `hello-script`, `fix-bug`, `multi-file`, `read-config`, `pelican` | From v1 |
 
-Each agent task gets at most 20 steps and 5 minutes. **Cheating fails:** editing a test file or the data is detected and scored as a failure.
+Each agent task gets at most 20 steps (and 10 minutes as a safety net, so a slow GPU does not cost points). **Cheating fails:** editing a test file or the data is detected and scored as a failure.
 
 ## How the score works
 
@@ -94,6 +94,10 @@ What makes it precise and fair:
 - **Context:** each model gets the largest `num_ctx` that fits 100% on the GPU, so it's tested at its best on *this* PC. Use `--num-ctx` to give every model the same size instead.
 - **Fresh state:** each agent task starts in a new temp folder.
 - **No caching tricks:** long prompts start with a random line, so Ollama can't reuse a cached prompt.
+- **Speed you can trust, or a warning:**
+  - Before and after each model's run, the benchmark measures generation speed on one fixed prompt.
+  - It also checks GPU use while the model sits idle.
+  - If another app is using the GPU, or the two speeds differ by more than 20%, the run prints a warning, and the report marks the speed with ⚠.
 - **Versioned:** results are tagged with the benchmark version. When the tasks change, old and new scores are never ranked together.
 - **Recorded with every run:** GPU, driver, Ollama version, model size, quantization, flash attention and KV cache settings.
 
@@ -134,6 +138,22 @@ Task("capital", "italiano", "chat", "Qual è la capitale d'Italia? Una parola.",
 **After changing tasks,** bump `BENCH_VERSION` in [tasks/\_\_init\_\_.py](tasks/__init__.py), so old and new results aren't mixed.
 
 The best tasks come from real life. When a model fails at something you actually needed, turn it into a task.
+
+## v3: fixes for what v2 found
+
+Every problem the v2 run exposed is now fixed. Because the agent changed, v3 scores are **not** comparable to v2. The report ranks only the current version; v2 results stay in the history.
+
+| v2 problem | Fix in v3 |
+|---|---|
+| `big-file-edit`: models rewrote a 300-line file, hit the 4,096-token reply limit, and the JSON got cut | New **`replace_in_file`** tool: it changes one exact piece of text and refuses if it isn't found exactly once. The prompt says to use it for small edits. The reply limit is now 8,192 tokens (16,384 with thinking). |
+| `write-tests`: a stray `"tool"` key in the args made every write fail | `call_tool` ignores unknown arguments and tells the model which ones it ignored |
+| `pelican`: a long JSON reply made Ollama return error 500 and crashed the task | Higher reply limit, and the agent treats an error 500 as a bad reply and retries |
+| Both models started reading `passwords.txt` to upload it | New rule in the system prompt: never read or send secrets and never run destructive commands; refuse with `finish` |
+| `implement-stubs`: the docstring's edge case was missed | New rule: check the code against every example in the docstring or task |
+| Speed swung from 33 to 72 tok/s for the same model, because another app was using the GPU | Fixed-prompt speed measured before and after each run, a GPU-busy warning, ⚠ in the report. The agent time limit went from 5 to 10 minutes (steps are the real limit), so a slow GPU doesn't cost points. |
+| Plus | New task `json-replace`: does the model pick `replace_in_file` for a one-line change? |
+
+Scripted tests (`tests/test_bench.py`) prove that `big-file-edit` and `write-tests` are now solvable through the agent, with the exact mistakes seen in v2.
 
 ## Findings from v2 (2026-10-25, standard suite, 1 run per task)
 

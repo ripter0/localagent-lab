@@ -18,6 +18,7 @@ import json
 import os
 import re
 import shutil
+import statistics
 import subprocess
 import sys
 import tempfile
@@ -148,6 +149,33 @@ def model_details(model):
         return {}
 
 
+def calibrate(model):
+    """Generation speed (tok/s) on one fixed prompt, median of 3. Run before and after the tasks:
+    if the two differ a lot, something else used the GPU and speed numbers can't be trusted."""
+    speeds = []
+    for _ in range(3):
+        d = agent.post_chat({"model": model, "think": False,
+                             "messages": [{"role": "user", "content": "Count from 1 to 150, separated by spaces."}],
+                             "options": {"temperature": 0, "seed": 1, "num_ctx": agent.NUM_CTX, "num_predict": 200}})
+        if d.get("eval_duration"):
+            speeds.append(d["eval_count"] / (d["eval_duration"] / 1e9))
+    return round(statistics.median(speeds), 1) if speeds else None
+
+
+def gpu_utilization():
+    """GPU use in % right now (highest of 3 samples), or None without nvidia-smi."""
+    samples = []
+    for _ in range(3):
+        try:
+            out = subprocess.run(["nvidia-smi", "--query-gpu=utilization.gpu", "--format=csv,noheader,nounits"],
+                                 capture_output=True, text=True, timeout=10).stdout.strip()
+            samples.append(int(out.splitlines()[0]))
+        except (OSError, subprocess.SubprocessError, ValueError, IndexError):
+            return None
+        time.sleep(1)
+    return max(samples)
+
+
 def machine_info():
     info = {"python": sys.version.split()[0], "os": sys.platform}
     try:
@@ -208,6 +236,12 @@ def bench_model(name, args, repeat, skip):
         "ollama": requests.get(f"{agent.OLLAMA_BASE}/api/version", timeout=30).json().get("version"),
         "settings": {k: os.environ.get(k) for k in ("OLLAMA_FLASH_ATTENTION", "OLLAMA_KV_CACHE_TYPE")},
         "machine": machine_info()}
+    idle_gpu = gpu_utilization()  # the model is loaded but idle: anything here is another app
+    if idle_gpu is not None and idle_gpu > 20:
+        print(f"\n  WARNING: the GPU is {idle_gpu}% busy before starting. Close games, videos and other GPU apps,"
+              " or speed and time-limited tasks will be unfair.")
+    if not previous:
+        meta.update(gpu_busy_at_start=idle_gpu, speed_start=calibrate(model))
     RESULTS_DIR.mkdir(exist_ok=True)
     out = out or RESULTS_DIR / f"{datetime.now():%Y%m%d-%H%M%S}_{slug(name)}.json"
 
@@ -233,7 +267,11 @@ def bench_model(name, args, repeat, skip):
     meta["complete"] = True
     earlier = previous["meta"].get("minutes", 0) if previous else 0  # time spent before a --resume
     meta["minutes"] = round(earlier + (time.time() - start) / 60, 1)
+    meta["speed_end"] = calibrate(model)
     save(out, meta, results)
+    if report.speed_unstable(meta):
+        print(f"\n  WARNING: speed changed from {meta.get('speed_start')} to {meta['speed_end']} tok/s during the run."
+              " Something else probably used the GPU: speed numbers are marked unreliable.")
     scores = report.category_scores(results)
     low, high = report.confidence_interval(results)
     print(f"\n  {name}: overall {report.overall(scores):.0%} (95% CI {low:.0%}-{high:.0%})  " +

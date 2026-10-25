@@ -32,6 +32,10 @@ def any_of(*checks):
     return check
 
 
+# a 121-line file with one DEBUG line in the middle: rewriting it all is the wrong tool
+OPTIONS = [f"OPTION_{i:03d} = {i * 7 % 100}" for i in range(1, 121)]
+SETTINGS_PY = "\n".join(OPTIONS[:60] + ["DEBUG = True"] + OPTIONS[60:])
+
 # ---------- JSON tools: the agent.py action format ----------
 JSON_TOOLS = [
     Task("json-list-dir", "json-tools", "chat", "Show me which files are in the workspace.",
@@ -83,6 +87,14 @@ JSON_TOOLS = [
                         '  File "app.py", line 2, in add\n    return a - b\nAssertionError')],
          good=act("see the bug", "read_file", path="app.py"),
          bad=act("done", "finish", message="Tests fail.")),
+    Task("json-replace", "json-tools", "chat", "Change DEBUG = True to DEBUG = False in settings.py.",
+         tool_is("replace_in_file", path=lambda p: p.endswith("settings.py"),
+                 old=lambda o: "DEBUG = True" in o, new=lambda n: "DEBUG = False" in n),
+         system=SYS, json_mode=True,
+         history=[{"role": "user", "content": "Show me settings.py."},
+                  *turn("read_file", {"path": "settings.py"}, SETTINGS_PY)],
+         good=act("one line", "replace_in_file", path="settings.py", old="DEBUG = True", new="DEBUG = False"),
+         bad=act("rewrite", "write_file", path="settings.py", content="DEBUG = False")),
     Task("json-after-success", "json-tools", "chat", "Continue.",
          tool_is("finish"), system=SYS, json_mode=True,
          history=[{"role": "user", "content": "Fix add() in app.py so `python test_app.py` prints ALL OK."},

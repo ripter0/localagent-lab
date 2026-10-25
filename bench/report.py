@@ -67,6 +67,22 @@ def reliability(results):
     return sum(all(v) for v in oks.values()) / len(oks)
 
 
+def speed_unstable(meta, tolerance=0.2):
+    """True if the calibration speed before and after the run differ by more than 20%."""
+    a, b = meta.get("speed_start"), meta.get("speed_end")
+    return bool(a and b and abs(a - b) / max(a, b) > tolerance)
+
+
+def speed_cell(meta, results):
+    """Calibrated speed (mean of before/after) if measured, else the median over tasks; ⚠ if unreliable."""
+    a, b = meta.get("speed_start"), meta.get("speed_end")
+    speed = (a + b) / 2 if a and b else gen_speed(results)
+    if not speed:
+        return "–"
+    warn = speed_unstable(meta) or (meta.get("gpu_busy_at_start") or 0) > 20
+    return f"{speed:.0f} tok/s" + (" ⚠" if warn else "")
+
+
 def gen_speed(results):
     speeds = [r["tok_per_s"] for r in results if r.get("tok_per_s") and r.get("tokens_out", 0) >= 20]
     return statistics.median(speeds) if speeds else None
@@ -155,13 +171,17 @@ def build_markdown(runs, results_dir):
            "|---|---|---|---|---|---|---|---|"]
     for _, model, run, _ in rows:
         m = run["meta"]
-        speed, read = gen_speed(run["results"]), read_speed(run["results"])
+        read = read_speed(run["results"])
         md.append(f"| `{model}` | {m.get('params') or '–'} | {m.get('quant') or '–'} | "
-                  f"{f'{speed:.0f} tok/s' if speed else '–'} | {f'{read:,.0f} tok/s' if read else '–'} | "
+                  f"{speed_cell(m, run['results'])} | {f'{read:,.0f} tok/s' if read else '–'} | "
                   f"{m['num_ctx']:,} | {m.get('gpu_percent', '–')}% · {m.get('size_gb', '–')} GB | "
                   f"{'on' if m.get('think') else 'off'} |")
-    md += ["", "*Generates* = output tokens per second. *Reads* = prompt tokens per second on the long-context "
-               "tasks. *Context* = the largest `num_ctx` that fits 100% on the GPU (or `--num-ctx`).", ""]
+    md += ["",
+           "- **Generates:** output tokens per second on a fixed prompt, measured before and after the run.",
+           "- **⚠:** the GPU was busy at the start, or the two speed measurements differ by more than 20%. "
+           "Another app was probably using the GPU, so don't trust that speed (or close tasks that hit a time limit).",
+           "- **Reads:** prompt tokens per second on the long-context tasks.",
+           "- **Context:** the largest `num_ctx` that fits 100% on the GPU (or `--num-ctx`).", ""]
 
     # Chart (GitHub renders mermaid)
     md += ["```mermaid", "xychart-beta", '    title "Overall score (%)"',

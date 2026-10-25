@@ -161,6 +161,30 @@ def test_agent_task_end_to_end_with_scripted_model(monkeypatch, tmp_path):
     assert r["status"] == "finish" and r["steps"] == 4
 
 
+def test_big_file_edit_is_solvable_with_replace_in_file(monkeypatch, tmp_path):
+    task = next(t for t in AGENT_TASKS if t.id == "big-file-edit")
+    monkeypatch.setattr(agent, "LOG_DIR", tmp_path)
+    monkeypatch.setattr(agent, "ask_model", scripted([
+        {"thought": "read", "tool": "read_file", "args": {"path": "config_table.py"}},
+        {"thought": "one line", "tool": "replace_in_file",
+         "args": {"path": "config_table.py", "old": "MAX_RETRIES = 3", "new": "MAX_RETRIES = 5"}},
+        {"thought": "done", "tool": "finish", "args": {"message": "changed"}},
+    ]))
+    r = run.run_agent_task(task, "fake-model")
+    assert r["ok"], r
+
+
+def test_stray_tool_key_no_longer_breaks_write_tests(monkeypatch, tmp_path):
+    task = next(t for t in AGENT_TASKS if t.id == "write-tests")
+    monkeypatch.setattr(agent, "LOG_DIR", tmp_path)
+    monkeypatch.setattr(agent, "ask_model", scripted([
+        {"thought": "write", "tool": "write_file",
+         "args": {"path": "test_slugify.py", "content": task.solution["test_slugify.py"], "tool": "write_file"}},
+        {"thought": "done", "tool": "finish", "args": {"message": "tests written"}},
+    ]))
+    assert run.run_agent_task(task, "fake-model")["ok"]
+
+
 def test_scripted_model_that_cheats_fails(monkeypatch, tmp_path):
     task = next(t for t in AGENT_TASKS if t.id == "fix-bug")
     monkeypatch.setattr(agent, "LOG_DIR", tmp_path)
@@ -260,6 +284,15 @@ def test_markdown_ranks_models_and_marks_unfinished(tmp_path):
     md = report.build_markdown(runs, tmp_path)
     assert md.index("`strong`") < md.index("`weak`")
     assert "xychart-beta" in md and "unfinished" in md
+
+
+def test_speed_is_marked_unreliable_when_it_changes_or_gpu_was_busy():
+    steady = {"speed_start": 50, "speed_end": 47}
+    changed = {"speed_start": 72, "speed_end": 33}
+    busy = {"speed_start": 50, "speed_end": 50, "gpu_busy_at_start": 60}
+    assert not report.speed_unstable(steady) and report.speed_cell(steady, []) == "48 tok/s"
+    assert report.speed_unstable(changed) and report.speed_cell(changed, []).endswith("⚠")
+    assert report.speed_cell(busy, []).endswith("⚠")
 
 
 def test_cell_symbols():

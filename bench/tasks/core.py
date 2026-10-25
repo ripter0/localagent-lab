@@ -35,7 +35,7 @@ class Task:
     solution: dict[str, str] = field(default_factory=dict)  # agent: reference fix, overlaid on files
     keep: list[str] = field(default_factory=list)  # agent: files saved as artifacts
     max_steps: int = 20
-    max_seconds: int = 300
+    max_seconds: int = 600  # a safety net; steps are the real limit (a busy GPU shouldn't cost points)
     good: str | None = None  # chat: a passing reply; agent: a passing finish message
     bad: str | None = None  # chat: a failing reply; agent: a failing finish message
 

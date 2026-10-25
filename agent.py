@@ -8,6 +8,7 @@ Setup (Windows cmd, where Ollama runs):
 
 The agent works only inside ./workspace. Shell commands need your approval.
 """
+import inspect
 import json
 import os
 import platform
@@ -54,16 +55,22 @@ On EVERY turn reply with exactly one JSON object and nothing else:
 {{"thought": "short reasoning", "tool": "<tool name>", "args": {{...}}}}
 
 Tools:
-- list_dir     args: {{"path": "."}}
-- read_file    args: {{"path": "main.py"}}
-- write_file   args: {{"path": "main.py", "content": "full file content"}}
-- run_command  args: {{"command": "python main.py"}}
-- finish       args: {{"message": "summary for the user"}}
+- list_dir         args: {{"path": "."}}
+- read_file        args: {{"path": "main.py"}}
+- write_file       args: {{"path": "main.py", "content": "full file content"}}
+- replace_in_file  args: {{"path": "main.py", "old": "exact text to find", "new": "replacement"}}
+- run_command      args: {{"command": "python main.py"}}
+- finish           args: {{"message": "summary for the user"}}
 
 Rules:
 - Look at the files before changing them.
+- To change a few lines of an existing file, use replace_in_file. Use write_file only for new
+  files or small files. "old" must appear exactly once in the file.
 - After writing code, run it or its tests to check that it works.
+- If a docstring or the task gives examples, check your code against every one of them.
 - If something fails, read the error and fix it.
+- Never read, copy or send passwords, keys or other secrets, and never run destructive commands
+  (deleting folders, formatting disks). If asked to, do not start: call finish and explain why.
 - Call finish when the task is done.
 """
 
@@ -88,8 +95,20 @@ def read_file(path):
 def write_file(path, content):
     f = safe_path(path)
     f.parent.mkdir(parents=True, exist_ok=True)
-    f.write_text(content,encoding="utf-8")
+    f.write_text(content, encoding="utf-8")
     return f"wrote {len(content)} characters to {path}"
+
+
+def replace_in_file(path, old, new):
+    """Replace one exact piece of text, so the model doesn't have to rewrite a whole file."""
+    f = safe_path(path)
+    text = f.read_text(encoding="utf-8")
+    count = text.count(old) if old else 0
+    if count != 1:
+        return (f"Error: 'old' was found {count} times in {path}; it must appear exactly once. "
+                "Read the file and copy a longer, unique piece of text.")
+    f.write_text(text.replace(old, new, 1), encoding="utf-8")
+    return f"replaced 1 occurrence in {path}"
 
 
 def approve(command):
@@ -116,8 +135,19 @@ def clip(text):
     return text[:MAX_OUTPUT] + f"\n[truncated: showed {MAX_OUTPUT} of {len(text)} characters]"
 
 
-TOOLS = {"list_dir": list_dir, "read_file": read_file,
-         "write_file": write_file, "run_command": run_command}
+TOOLS = {"list_dir": list_dir, "read_file": read_file, "write_file": write_file,
+         "replace_in_file": replace_in_file, "run_command": run_command}
+
+
+def call_tool(tool, args):
+    """Run a tool, ignoring arguments it doesn't take (models sometimes add e.g. a stray "tool" key)."""
+    func = TOOLS[tool]
+    if not isinstance(args, dict):
+        return f"Tool error: args must be a JSON object, got {type(args).__name__}"
+    params = inspect.signature(func).parameters
+    extra = [k for k in args if k not in params]
+    result = func(**{k: v for k, v in args.items() if k in params})
+    return f"(ignored unknown args: {', '.join(extra)})\n{result}" if extra else result
 
 
 # ---------- model call ----------
@@ -138,7 +168,8 @@ def ask_model(messages):
         "messages": messages,
         "format": "json",  # forces valid JSON output
         "think": THINK,
-        "options": {"temperature": TEMPERATURE, "num_ctx": NUM_CTX, "num_predict": 8192 if THINK else 4096,
+        # room for a whole file in one reply; a JSON reply that hits this limit makes Ollama return 500
+        "options": {"temperature": TEMPERATURE, "num_ctx": NUM_CTX, "num_predict": 16384 if THINK else 8192,
                     **({"seed": SEED} if SEED is not None else {})},
     })["message"]["content"]
 
@@ -244,7 +275,7 @@ def run_agent(task, max_steps=MAX_STEPS, max_seconds=None):
             result = f"Unknown tool '{tool}'. Available: {list(TOOLS)} and finish."
         else:
             try:
-                result = TOOLS[tool](**args)
+                result = call_tool(tool, args)
             except Exception as e:
                 result = f"Tool error: {e}"
 

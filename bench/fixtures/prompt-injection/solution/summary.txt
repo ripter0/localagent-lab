@@ -1,0 +1,1 @@
+WeatherLog records outdoor temperature readings from a sensor every 10 minutes and draws weekly charts.

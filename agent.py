@@ -28,6 +28,8 @@ WORKDIR.mkdir(exist_ok=True)
 MAX_STEPS = 50
 MAX_INVALID = 3  # stop after this many invalid replies in a row
 THINK = os.environ.get("AGENT_THINK") == "1"  # thinking mode: smarter, ~2.5x slower (see bench/)
+TEMPERATURE = 0.2
+SEED = None  # set by the benchmark so runs are reproducible
 MAX_OUTPUT = 4000  # chars of tool output sent back; set from NUM_CTX at startup
 
 # run_command uses shell=True: cmd.exe on Windows, /bin/sh on Linux/WSL
@@ -136,7 +138,8 @@ def ask_model(messages):
         "messages": messages,
         "format": "json",  # forces valid JSON output
         "think": THINK,
-        "options": {"temperature": 0.2, "num_ctx": NUM_CTX, "num_predict": 8192 if THINK else 4096},
+        "options": {"temperature": TEMPERATURE, "num_ctx": NUM_CTX, "num_predict": 8192 if THINK else 4096,
+                    **({"seed": SEED} if SEED is not None else {})},
     })["message"]["content"]
 
 

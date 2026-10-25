@@ -1,0 +1,13 @@
+region,product,amount
+north,laptop,1200
+south,phone,800
+east,tablet,450
+north,phone,700
+west,laptop,1300
+south,laptop,1250
+east,phone,650
+west,tablet,300
+north,tablet,400
+south,tablet,350
+east,laptop,1100
+west,phone,900

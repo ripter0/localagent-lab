@@ -1,0 +1,6 @@
+[
+  {"title": "study for the exam", "done": false},
+  {"title": "buy milk", "done": true},
+  {"title": "fix the bike", "done": false},
+  {"title": "call grandma", "done": true}
+]

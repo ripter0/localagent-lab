@@ -77,8 +77,8 @@ Full PC setup, including Ollama settings, PATH, OpenCode and troubleshooting: **
 | Ollama flash attention and `q8_0` cache | ✅ | 131k context: 9.95 GB spilling → 7.8 GB on GPU |
 | OpenCode with the local model | ✅ | Course lesson explained in 14 s; clean 3-line edit on a step-by-step prompt |
 | Stops after 3 invalid replies in a row, optional time limit | ✅ | no more 50-step `invalid_format` loops |
-| Personal benchmark (`bench/`) | ✅ | 7 categories, 31 tasks, leaderboard in [bench/RESULTS.md](bench/RESULTS.md) |
-| Tests | ✅ | 26 passing: `uv run pytest` (WSL) |
+| Personal benchmark (`bench/`) | ✅ | 79 tasks in 8 categories, 18 agent projects, 95% intervals ([bench/](bench/README.md)) |
+| Tests | ✅ | 130 passing, on WSL and Windows: `uv run pytest` |
 | Log summarizer `tools/summarize_log.py` | ⏳ | M1: empty, I write it myself |
 
 Known limits:
@@ -87,20 +87,25 @@ Known limits:
 
 ## Benchmark
 
-[`bench/`](bench) is a **personal benchmark**: 31 tasks I care about, all checked automatically. It covers the agent's JSON format, instructions, reasoning, code with hidden tests, Italian, finding a needle in up to 141k tokens, and 6 real agent runs. One of those is drawing a pelican on a bicycle.
+[`bench/`](bench) is a **personal benchmark** of 79 tasks in 8 categories, all checked automatically. It covers:
+- the agent's JSON format
+- instructions, reasoning, and code with hidden tests
+- Italian
+- long context up to 75% of `num_ctx`
+- safety: dangerous commands, prompt injection, honesty
+- **18 realistic mini-projects** the agent must debug, refactor, extend or analyze
+
+It uses fixed seeds, saves after every task (`--resume`), and reports 95% confidence intervals, so you can tell a real difference between models from luck.
 
 ```bash
-python -m bench.run qwen3.5:9b qwen3.5:9b+think
+python -m bench.run qwen3.5:9b gemma4:12b --suite full
 ```
 
-Latest results ([full leaderboard](bench/RESULTS.md)):
+`--suite full` runs everything 3 times, about 1 to 1.5 hours per model. Results: [bench/RESULTS.md](bench/RESULTS.md). The guide and how to add tasks: [bench/README.md](bench/README.md).
 
-| Model | Overall | Reasoning | Agent | Time |
-|---|---|---|---|---|
-| `qwen3.5:9b+think` | **97%** | 80% | 100% | 12.0 min |
-| `qwen3.5:9b` | **80%** | 20% | 100% | 4.6 min |
-
-Thinking mode fixes reasoning but costs about 2.6× the time. For agent tasks both scored the same. More findings: [bench/README.md](bench/README.md).
+Findings from the first, smaller version ([v1](bench/RESULTS-v1.md)):
+- `qwen3.5:9b` scored **80%** without thinking and **97%** with it.
+- Reasoning went from 20% to 80%, but thinking took about 2.6× the time.
 
 ## Milestones
 
@@ -126,7 +131,7 @@ Thinking mode fixes reasoning but costs about 2.6× the time. For agent tasks bo
 ```
 agent.py              the agent (loop, tools, model call, auto num_ctx)
 tools/                helper scripts (M1: summarize_log.py)
-bench/                personal benchmark: tasks, runner, report, RESULTS.md
+bench/                personal benchmark: tasks/, fixtures/ (agent projects), runner, report, RESULTS.md
 tests/                pytest: logging, num_ctx search, output clipping, benchmark checks
 prompts/              saved system prompts (an old hackathon one)
 docs/SETUP.md         full PC setup and troubleshooting
@@ -143,5 +148,5 @@ Not in git: `workspace/` (the agent's sandbox), `logs/` (run logs and the `num_c
 |---|---|---|
 | `AGENT_MODEL` | `qwen3.5:9b` | Ollama model to use |
 | `AGENT_NUM_CTX` | auto | Force a context size instead of measuring |
-| `AGENT_THINK` | off | `1` turns thinking mode on: much better reasoning, ~2.5× slower ([benchmark](bench/RESULTS.md)) |
+| `AGENT_THINK` | off | `1` turns thinking mode on: much better reasoning, ~2.5× slower ([benchmark](bench/RESULTS-v1.md)) |
 | `OLLAMA_URL` | `http://localhost:11434/api/chat` | Where Ollama is |

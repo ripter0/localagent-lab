@@ -20,6 +20,9 @@ import requests
 
 MODEL = os.environ.get("AGENT_MODEL", "qwen3.5:9b")  # name shown by `ollama list`
 OLLAMA_URL = os.environ.get("OLLAMA_URL", "http://localhost:11434/api/chat")
+OLLAMA_BASE = OLLAMA_URL.rsplit("/api/", 1)[0]
+CTX_STEP = 8192  # num_ctx is searched in multiples of this
+NUM_CTX = CTX_STEP  # replaced at startup by pick_num_ctx()
 WORKDIR = Path("workspace").resolve()
 WORKDIR.mkdir(exist_ok=True)
 MAX_STEPS = 50
@@ -30,6 +33,7 @@ SHELL = "Windows cmd.exe" if platform.system() == "Windows" else "Linux /bin/sh"
 
 LOG_DIR = Path("logs")
 LOG_DIR.mkdir(exist_ok=True)
+CTX_CACHE = LOG_DIR / "num_ctx.json"  # best num_ctx found per model
 
 
 def log_step(log_file, **record):
@@ -108,16 +112,64 @@ def ask_model(messages):
         "stream": False,
         "format": "json",  # forces valid JSON output
         "think": False,  # qwen3.5 thinking mode + json format gave empty replies
-        "options": {"temperature": 0.2, "num_ctx": 8192, "num_predict": 4096},
+        "options": {"temperature": 0.2, "num_ctx": NUM_CTX, "num_predict": 4096},
     }, timeout=600)
     r.raise_for_status()
     return r.json()["message"]["content"]
 
 
+# ---------- context size ----------
+def model_max_ctx(model):
+    """Context length the model was trained for, from `ollama show`."""
+    r = requests.post(f"{OLLAMA_BASE}/api/show", json={"model": model}, timeout=60)
+    r.raise_for_status()
+    info = r.json().get("model_info", {})
+    return next((v for k, v in info.items() if k.endswith(".context_length")), CTX_STEP)
+
+
+def fits_on_gpu(model, num_ctx):
+    """Load the model with this num_ctx and check that `ollama ps` shows 100% GPU."""
+    r = requests.post(f"{OLLAMA_BASE}/api/generate", json={
+        "model": model, "prompt": "", "stream": False,  # empty prompt: load only
+        "options": {"num_ctx": num_ctx},
+    }, timeout=600)
+    r.raise_for_status()
+    loaded = requests.get(f"{OLLAMA_BASE}/api/ps", timeout=60).json()["models"]
+    m = next(m for m in loaded if m["name"] == model or m["model"] == model)
+    return m["size_vram"] >= m["size"]
+
+
+def find_num_ctx(model):
+    """Largest multiple of CTX_STEP (up to the model's max) that fits on the GPU."""
+    lo, hi = 1, max(1, model_max_ctx(model) // CTX_STEP)
+    if not fits_on_gpu(model, lo * CTX_STEP):
+        return CTX_STEP  # even the smallest size spills to RAM: just use it
+    while lo < hi:  # binary search: fits at lo, unknown above
+        mid = (lo + hi + 1) // 2
+        if fits_on_gpu(model, mid * CTX_STEP):
+            lo = mid
+        else:
+            hi = mid - 1
+    return lo * CTX_STEP
+
+
+def pick_num_ctx(model):
+    """AGENT_NUM_CTX if set, else the cached value if it still fits, else search again."""
+    if os.environ.get("AGENT_NUM_CTX"):
+        return int(os.environ["AGENT_NUM_CTX"])
+    cache = json.loads(CTX_CACHE.read_text(encoding="utf-8")) if CTX_CACHE.exists() else {}
+    if model in cache and fits_on_gpu(model, cache[model]):
+        return cache[model]
+    print("Finding the largest context that fits on the GPU (one-time, ~1 min)...")
+    cache[model] = find_num_ctx(model)
+    CTX_CACHE.write_text(json.dumps(cache, indent=2), encoding="utf-8")
+    return cache[model]
+
+
 # ---------- agent loop ----------
 def run_agent(task):
     log_file = LOG_DIR / f"{datetime.now():%Y%m%d-%H%M%S}.jsonl"
-    log_step(log_file, event="start", model=MODEL, task=task)
+    log_step(log_file, event="start", model=MODEL, num_ctx=NUM_CTX, task=task)
     messages = [{"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": task}]
     for step in range(1, MAX_STEPS + 1):
@@ -158,6 +210,8 @@ def run_agent(task):
 
 if __name__ == "__main__":
     print(f"Workspace: {WORKDIR}")
+    NUM_CTX = pick_num_ctx(MODEL)
+    print(f"Model: {MODEL}, num_ctx: {NUM_CTX}")
     while True:
         task = input("\nTask (empty to quit): ").strip()
         if not task:

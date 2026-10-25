@@ -14,6 +14,8 @@ ollama pull qwen3.5:9b
 python agent.py
 ```
 
+On startup the agent picks `num_ctx` (the model's working memory) by itself. It loads the model at bigger and bigger sizes and keeps the largest one that still shows 100% GPU in `ollama ps`. The search takes about a minute per model the first time. After that the result is cached in `logs/num_ctx.json` and checked once each start. To force a size, use `set AGENT_NUM_CTX=16384`.
+
 To try another model in `cmd`, run `set AGENT_MODEL=gemma4:12b` and then `python agent.py`. Tests run in WSL with `uv run pytest`.
 
 Check `ollama ps` while it runs: the model should show 100% GPU. Each run writes a step log to `logs/<timestamp>.jsonl`.

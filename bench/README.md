@@ -18,8 +18,12 @@ A benchmark made for **my** use: the agent's JSON format, small code tasks, Ital
 4. **Long context really works.**
    - Both modes found the hidden code at **141,302 real tokens**, 75% of the context.
    - The model reads about 2,600 to 3,900 tokens/s, so a 141k prompt takes about 55 s just to read.
-5. **Still hard: counting letters.** "How many r's in strawberry raspberry" failed in both modes (answers 4 and 5, correct is 6). Models see *tokens*, not letters. This is a famous weakness of LLMs.
-6. **Two bugs in my own benchmark**, found by checking a result that looked suspicious:
+5. **The pelicans show it best.**
+   - With thinking: a recognizable pelican with an orange beak on a two-wheel bicycle.
+   - Without thinking: an orange blob in a box with two wheel-like circles.
+   - Both passed the automatic check (enough shapes), so look at the [gallery](RESULTS.md#pelican-riding-a-bicycle) yourself: some quality only eyes can judge.
+6. **Still hard: counting letters.** "How many r's in strawberry raspberry" failed in both modes (answers 4 and 5, correct is 6). Models see *tokens*, not letters. This is a famous weakness of LLMs.
+7. **Two bugs in my own benchmark**, found by checking a result that looked suspicious:
    - **Wrong token estimate.** I assumed 4 characters per token, but log lines full of numbers average **2.8**. My "141k" test was really about 200k tokens, more than the context.
    - **Silent cutting.** Ollama then **cut the prompt silently to half the context** (94,210 tokens). The hidden code was lost, and the model "failed" a test it never really got. The benchmark now detects cut prompts and reports them.
    - **Faked speed.** The second run's "read speed" was faked by Ollama's prompt cache. Each haystack now gets a random first line, so it can't be reused.

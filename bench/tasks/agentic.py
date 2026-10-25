@@ -69,6 +69,8 @@ def check_big_file(workdir, summary):
     if len(new) != len(old):
         return False, f"{len(old)} lines became {len(new)}"
     diff = [(a, b) for a, b in zip(old, new) if a != b]
+    if not diff:
+        return False, "file unchanged"
     if diff != [("MAX_RETRIES = 3", "MAX_RETRIES = 5")]:
         return False, f"{len(diff)} lines differ: {short(diff[:2])}"
     return True, "only MAX_RETRIES changed"

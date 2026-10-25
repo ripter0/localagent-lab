@@ -212,7 +212,11 @@ def run_agent(task, max_steps=MAX_STEPS, max_seconds=None):
         if max_seconds and time.time() - start > max_seconds:
             return stop("time_limit", step=step - 1)
         t0 = time.time()
-        raw = ask_model(messages)
+        try:
+            raw = ask_model(messages)
+        except requests.HTTPError as e:  # e.g. 500 when a JSON reply hits num_predict: treat as a bad reply
+            print(f"\n  Ollama error: {e}")
+            raw = ""
         latency = round(time.time() - t0, 2)
         messages.append({"role": "assistant", "content": raw})
         try:

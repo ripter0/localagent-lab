@@ -76,7 +76,9 @@ Full PC setup, including Ollama settings, PATH, OpenCode and troubleshooting: **
 | Whole files to the model; cut output is marked | ✅ | 106k-character file read in one piece, last line found |
 | Ollama flash attention and `q8_0` cache | ✅ | 131k context: 9.95 GB spilling → 7.8 GB on GPU |
 | OpenCode with the local model | ✅ | Course lesson explained in 14 s; clean 3-line edit on a step-by-step prompt |
-| Tests | ✅ | 8 passing: `uv run pytest` (WSL) |
+| Stops after 3 invalid replies in a row, optional time limit | ✅ | no more 50-step `invalid_format` loops |
+| Personal benchmark (`bench/`) | ✅ | 7 categories, 31 tasks, leaderboard in [bench/RESULTS.md](bench/RESULTS.md) |
+| Tests | ✅ | 24 passing: `uv run pytest` (WSL) |
 | Log summarizer `tools/summarize_log.py` | ⏳ | M1: empty, I write it myself |
 
 Known limits:
@@ -107,7 +109,8 @@ Known limits:
 ```
 agent.py              the agent (loop, tools, model call, auto num_ctx)
 tools/                helper scripts (M1: summarize_log.py)
-tests/                pytest: logging, num_ctx search, output clipping
+bench/                personal benchmark: tasks, runner, report, RESULTS.md
+tests/                pytest: logging, num_ctx search, output clipping, benchmark checks
 prompts/              saved system prompts (an old hackathon one)
 docs/SETUP.md         full PC setup and troubleshooting
 docs/CURRICULUM.md    milestone -> ai-engineering-from-scratch lessons

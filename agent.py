@@ -26,6 +26,8 @@ NUM_CTX = CTX_STEP  # replaced at startup by pick_num_ctx()
 WORKDIR = Path("workspace").resolve()
 WORKDIR.mkdir(exist_ok=True)
 MAX_STEPS = 50
+MAX_INVALID = 3  # stop after this many invalid replies in a row
+THINK = False  # thinking mode; off by default (it gave empty replies with format json)
 MAX_OUTPUT = 4000  # chars of tool output sent back; set from NUM_CTX at startup
 
 # run_command uses shell=True: cmd.exe on Windows, /bin/sh on Linux/WSL
@@ -88,9 +90,14 @@ def write_file(path, content):
     return f"wrote {len(content)} characters to {path}"
 
 
-def run_command(command):
+def approve(command):
+    """Ask the user before running a command. The benchmark replaces this with an allowlist."""
     print(f"\n  Agent wants to run: {command}")
-    if input("  Allow? [y/N] ").strip().lower() != "y":
+    return input("  Allow? [y/N] ").strip().lower() == "y"
+
+
+def run_command(command):
+    if not approve(command):
         return "The user denied this command."
     try:
         r = subprocess.run(command, shell=True, cwd=WORKDIR,
@@ -112,17 +119,25 @@ TOOLS = {"list_dir": list_dir, "read_file": read_file,
 
 
 # ---------- model call ----------
+def post_chat(payload):
+    """POST to /api/chat and return the full JSON reply (content + timing stats)."""
+    payload = {"stream": False, "think": False, **payload}  # think: qwen3.5 + json gave empty replies
+    r = requests.post(OLLAMA_URL, json=payload, timeout=600)
+    if r.status_code == 400 and "think" in r.text:  # model has no thinking mode: drop the flag
+        payload.pop("think")
+        r = requests.post(OLLAMA_URL, json=payload, timeout=600)
+    r.raise_for_status()
+    return r.json()
+
+
 def ask_model(messages):
-    r = requests.post(OLLAMA_URL, json={
+    return post_chat({
         "model": MODEL,
         "messages": messages,
-        "stream": False,
         "format": "json",  # forces valid JSON output
-        "think": False,  # qwen3.5 thinking mode + json format gave empty replies
-        "options": {"temperature": 0.2, "num_ctx": NUM_CTX, "num_predict": 4096},
-    }, timeout=600)
-    r.raise_for_status()
-    return r.json()["message"]["content"]
+        "think": THINK,
+        "options": {"temperature": 0.2, "num_ctx": NUM_CTX, "num_predict": 8192 if THINK else 4096},
+    })["message"]["content"]
 
 
 # ---------- context size ----------
@@ -174,12 +189,24 @@ def pick_num_ctx(model):
 
 
 # ---------- agent loop ----------
-def run_agent(task):
-    log_file = LOG_DIR / f"{datetime.now():%Y%m%d-%H%M%S}.jsonl"
+def run_agent(task, max_steps=MAX_STEPS, max_seconds=None):
+    """Run one task. Returns a summary dict (used by the benchmark)."""
+    log_file = LOG_DIR / f"{datetime.now():%Y%m%d-%H%M%S-%f}.jsonl"
     log_step(log_file, event="start", model=MODEL, num_ctx=NUM_CTX, task=task)
     messages = [{"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": task}]
-    for step in range(1, MAX_STEPS + 1):
+    start, bad_in_a_row, invalid = time.time(), 0, 0
+
+    def stop(status, message="", step=0):
+        log_step(log_file, event=status)
+        if status != "finish":
+            print(f"\nStopped: {status}.")
+        return {"status": status, "message": message, "steps": step, "invalid": invalid,
+                "seconds": round(time.time() - start, 1), "log": log_file.name}
+
+    for step in range(1, max_steps + 1):
+        if max_seconds and time.time() - start > max_seconds:
+            return stop("time_limit", step=step - 1)
         t0 = time.time()
         raw = ask_model(messages)
         latency = round(time.time() - t0, 2)
@@ -187,18 +214,24 @@ def run_agent(task):
         try:
             action = json.loads(raw)
             tool, args = action["tool"], action.get("args", {})
-        except (json.JSONDecodeError, KeyError, TypeError):
+        except (json.JSONDecodeError, KeyError, TypeError, AttributeError):
+            invalid += 1
+            bad_in_a_row += 1
             log_step(log_file, step=step, raw=raw, latency=latency, error="invalid_format")
+            if bad_in_a_row >= MAX_INVALID:  # the model is stuck: stop instead of burning steps
+                return stop("bad_format", step=step)
             messages.append({"role": "user",
                              "content": "Invalid format. Reply with one JSON object: thought, tool, args."})
             continue
+        bad_in_a_row = 0
 
         print(f"\n[{step}] {action.get('thought', '')}\n    -> {tool} {json.dumps(args)[:200]}")
 
         if tool == "finish":
             log_step(log_file, step=step, tool=tool, args=args, latency=latency)
-            print("\nDONE:", args.get("message", ""))
-            return
+            message = str(args.get("message", "")) if isinstance(args, dict) else str(args)
+            print("\nDONE:", message)
+            return stop("finish", message, step)
         if tool not in TOOLS:
             result = f"Unknown tool '{tool}'. Available: {list(TOOLS)} and finish."
         else:
@@ -210,8 +243,7 @@ def run_agent(task):
         result = clip(str(result))
         log_step(log_file, step=step, tool=tool, args=args, result=result, latency=latency)
         messages.append({"role": "user", "content": f"Tool result:\n{result}"})
-    log_step(log_file, event="step_limit")
-    print("\nStopped: reached the step limit.")
+    return stop("step_limit", step=max_steps)
 
 
 if __name__ == "__main__":

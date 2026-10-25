@@ -1,0 +1,84 @@
+# Personal benchmark
+
+A benchmark made for **my** use: the agent's JSON format, small code tasks, Italian, long files, and real agent runs in a sandbox. Public leaderboards test other things, so I don't trust them for my setup. Everything is scored automatically, so a run is repeatable and models can be compared fairly.
+
+**Results: [RESULTS.md](RESULTS.md)**: leaderboard, chart, every task, and the pelican gallery.
+
+## Run it
+
+From the repo root, in a Windows `cmd` (Ollama must be running):
+
+```bash
+python -m bench.run qwen3.5:9b
+```
+
+| Command | What it does |
+|---|---|
+| `python -m bench.run qwen3.5:9b gemma4:12b` | Compare several models in one go |
+| `python -m bench.run qwen3.5:9b+think` | Same model with **thinking mode on** |
+| `python -m bench.run qwen3.5:9b --quick` | Skip agent and long-context tasks (~1 min) |
+| `python -m bench.run qwen3.5:9b --only code,reasoning` | Only these categories (or task ids) |
+| `python -m bench.run qwen3.5:9b --repeat 3` | Each task 3 times. Models are random, so this gives steadier numbers |
+| `python -m bench.report` | Rebuild RESULTS.md from saved results |
+
+A full run takes about 10 to 20 minutes per model. Models that aren't installed are skipped, with the `ollama pull` command to install them.
+
+## What it tests
+
+| Category | Tasks | How it's checked |
+|---|---|---|
+| **JSON tools** | 5 requests in `agent.py`'s action format (list, read, write, run, finish) | Valid JSON, right tool, right args |
+| **Instructions** | Exactly 3 lowercase words, YES/NO only, a JSON list of 5, a sentence without the letter "e" | Exact rules |
+| **Reasoning** | Apples, discount+tax, bat and ball, counting the r's in "strawberry raspberry", the weekday in 100 days | Exact answer |
+| **Code** | `is_palindrome`, `roman_to_int`, `merge_intervals`, `word_count` | The model's code is run against hidden tests |
+| **Italiano** | IT→EN, EN→IT, a fact question in Italian | Key words / exact answer |
+| **Long context** | Find a secret code hidden in 4k, 16k, 64k tokens of logs, then in ~75% of the model's whole context | Exact code |
+| **Agent** | The full `agent.py` loop, in a fresh temp folder | The resulting files are checked |
+
+The agent tasks:
+- **hello-script:** create a file and run it.
+- **fix-bug:** two bugs in `stats.py`. Editing the check file counts as cheating.
+- **multi-file:** change two files that depend on each other.
+- **read-config:** find a value somewhere in the project.
+- **honesty:** read a file that **doesn't exist**. It passes only if the model says so instead of making something up.
+- **pelican:** draw an SVG pelican riding a bicycle. The drawing is saved to `results/artifacts/` and shown in RESULTS.md, so you can see each model's drawing.
+
+Scores:
+- **Category score** = tasks passed / tasks run.
+- **Overall** = the mean of the category scores, so a category with 5 tasks weighs the same as one with 4.
+
+Also measured, per model:
+- **Speed:** generated tokens per second.
+- **Reads:** prompt tokens per second on the long-context tasks.
+- **Context:** the `num_ctx` that fits 100% on the GPU.
+- **Memory:** GPU % and GB.
+
+## Safety
+
+The agent tasks run without asking you. Instead, every command goes through an **allowlist** (`is_allowed` in [run.py](run.py)):
+- **Allowed:** `python <file>.py` with a relative path, plus `dir`, `ls`, `type` and `cat`.
+- **Refused:** anything with `..`, absolute paths, `&`, `|`, `>`, `;` or `%`, and every other command, such as `del` or `python -c`.
+
+Each agent task runs in a new temp folder that is deleted afterwards. The code tasks run the model's code in a temp folder, with a 15 s timeout. The model writing the code is a local 9B model working on simple tasks, so the risk is low. Still, don't add tasks that invite destructive code.
+
+## Add a task
+
+Tasks are plain Python in [tasks.py](tasks.py). A chat task is one prompt plus a check function:
+
+```python
+Task("capital", "italiano", "chat", "Qual è la capitale d'Italia? Una parola.",
+     text_matches(r"^\W*roma\W*$")),
+```
+
+Then add a test for the check in `tests/test_bench.py`: one right answer and one wrong one. That way a broken check can't silently give wrong scores.
+
+## Ideas to try
+
+- **Thinking on or off.** Does `+think` fix reasoning, and does it break JSON? This one is already measured in RESULTS.md.
+- **Models worth comparing on 12 GB**, all checked to exist in the Ollama library on 2026-10-25:
+  - `gemma4:12b`: general use
+  - `qwen2.5-coder:14b`: code specialist
+  - `qwen3.5:4b`: small and fast, a candidate for the M10 decider
+- **Settings:** the same model at `AGENT_NUM_CTX=8192` vs. the automatic maximum. Does a smaller context make it faster, or better?
+- **Variance:** `--repeat 5` on one model shows how much the score moves between runs. Only trust a difference between models if it's bigger than that.
+- **Your own tasks:** every time a model fails at something real, add it as a task. That's how the benchmark becomes truly personal.

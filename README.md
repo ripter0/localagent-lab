@@ -10,21 +10,13 @@ The repo has two parts:
 Both use the same model, served by Ollama on the GPU.
 
 ```mermaid
-flowchart LR
-    subgraph PC["My PC: Windows, RTX 4070 SUPER 12 GB"]
-        direction LR
-        O["Ollama<br/>qwen3.5:9b<br/>100% on GPU"]
-        A["agent.py<br/>my agent (learning)"]
-        C["OpenCode<br/>daily assistant"]
-        W[("workspace/<br/>sandbox folder")]
-        R[("my repos")]
-        K[("course repo<br/>read-only")]
-        A -- "HTTP /api/chat" --> O
-        C -- "HTTP /v1" --> O
-        A -- "reads / writes only here" --> W
-        C -- "edits" --> R
-        C -- "answers questions" --> K
-    end
+flowchart TD
+    O["Ollama: qwen3.5:9b<br/>RTX 4070 SUPER, 100% GPU"]
+    A["agent.py<br/>my agent (learning)"] --> O
+    C["OpenCode<br/>daily assistant"] --> O
+    A --> W[("workspace/ sandbox")]
+    C --> R[("my repos")]
+    C --> K[("course repo, read-only")]
 ```
 
 ## How `agent.py` works
